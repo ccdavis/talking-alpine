@@ -1,0 +1,82 @@
+#!/bin/sh
+# Install the talking system permanently on one of the PC's disks, so it boots
+# without the stick. Everything on that disk is erased. Alpine's own text-mode
+# installer (setup-disk, spoken by tdsr like any other program) partitions the
+# disk, installs the same packages from the stick's repository (no network
+# needed), copies the configuration under /etc and sets up the boot loader;
+# this script asks the questions, then adjusts the result for a disk install.
+set -e
+if [ "$(id -u)" != 0 ]; then exec doas /usr/bin/speech-install-disk "$@"; fi
+if [ -e /etc/speech/installed ]; then echo "This system is already installed on a disk."; exit 1; fi
+
+stick=$(findfs LABEL=ALPINE 2>/dev/null || true)
+case "$stick" in *[0-9]p[0-9]*) stickdisk=${stick%p[0-9]*};; *) stickdisk=${stick%[0-9]*};; esac
+stickdisk=${stickdisk#/dev/}
+
+echo "Install the talking system on a disk in this PC."
+echo "Disks found (the USB stick, $stickdisk, is not offered):"
+n=0
+for d in /sys/block/*; do
+	name=${d#/sys/block/}
+	case "$name" in loop*|ram*|sr*|fd*|zram*|dm-*|md*) continue;; esac
+	[ "$name" = "$stickdisk" ] && continue
+	[ "$(cat $d/removable 2>/dev/null)" = 1 ] && [ -z "${INCLUDE_REMOVABLE:-}" ] && continue
+	size=$(( $(cat $d/size) / 2048 ))
+	model=$(cat $d/device/model 2>/dev/null | tr -s ' ' || true)
+	echo "  $name: $size MB $model"
+	n=$((n + 1))
+done
+if [ $n = 0 ]; then echo "No disk found. (Removable disks are skipped; INCLUDE_REMOVABLE=1 offers them.)"; exit 1; fi
+printf 'Disk to erase and install on (name only, like sda), or Enter to stop: '
+read -r disk
+[ -n "$disk" ] || exit 0
+disk=${disk#/dev/}
+[ -b "/dev/$disk" ] || { echo "No such disk: $disk"; exit 1; }
+[ "$disk" = "$stickdisk" ] && { echo "That is the stick itself."; exit 1; }
+echo "Everything on /dev/$disk will be erased."
+printf 'Type the word ERASE to continue: '
+read -r ok
+[ "$ok" = ERASE ] || { echo "Stopped, nothing changed."; exit 0; }
+printf 'Password for the user account on the installed system (Enter for none): '
+read -r pw
+echo
+
+if [ -d /sys/firmware/efi ]; then
+	echo "UEFI machine: GPT disk with grub."
+else
+	echo "BIOS machine: MBR disk with syslinux."
+fi
+echo "Installing. This takes a few minutes; the installer reports each step."
+# The installer's own questions are answered: whole disk, "sys" mode, lts
+# kernel, no swap (the user can add one later), and "y" to its erase
+# warning on stdin. ERASE_DISKS is deliberately not used: setup-disk then
+# assumes the boot medium is the first SCSI disk and, when that is the disk
+# being erased, copies the whole module tree into RAM first, which fills it
+# when the stick is sdb and the target sda.
+export KERNELOPTS="quiet"
+printf 'y\n' | setup-disk -m sys -k lts -s 0 "/dev/$disk"
+
+echo "Adjusting the installed system..."
+# the root partition is the last one on the disk
+root=$(ls -1 /dev/${disk}* | grep "^/dev/${disk}p\?[0-9]" | sort -V | tail -1)
+mnt=/mnt/installed; mkdir -p $mnt
+mount "$root" $mnt
+# a disk install keeps its changes; no stick, no cache, no lbu, no data partition
+touch $mnt/etc/speech/installed
+sed -i '/^#\?\/media\/usb/d' $mnt/etc/apk/repositories
+rm -f $mnt/etc/apk/cache
+sed -i '/LABEL=ALPINE\|\/media\/usb\|SPEECHDATA/d' $mnt/etc/fstab
+rm -f $mnt/etc/.default_boot_services
+# the user's files from the stick's data partition
+mkdir -p $mnt/home/user
+if mountpoint -q /home/user; then cp -a /home/user/. $mnt/home/user/; fi
+[ -f $mnt/home/user/.tdsr.cfg ] || cp /etc/speech/tdsr.cfg $mnt/home/user/.tdsr.cfg
+chroot $mnt chown -R user:user /home/user
+if [ -n "$pw" ]; then echo "user:$pw" | chroot $mnt chpasswd >/dev/null 2>&1 && echo "Password set."; fi
+umount $mnt
+sync
+echo "Done. The talking system is installed on /dev/$disk."
+echo "Remove the stick and restart the machine; it boots from the disk from now on."
+printf 'Restart now? (y/N): '
+read -r r
+case "$r" in y|Y) reboot;; esac

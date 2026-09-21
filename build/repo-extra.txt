@@ -1,0 +1,9 @@
+# Packages carried in the stick's repository without being installed on the stick: what
+# speech-install-disk (Alpine's setup-disk) needs to put the system on a hard disk, offline.
+syslinux
+grub
+grub-bios
+grub-efi
+dosfstools
+mkinitfs
+lsblk

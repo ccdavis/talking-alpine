@@ -13,6 +13,7 @@ Commands:
   speech-save        save settings under /etc to the stick
   speech-audio-next  send speech to the next sound card, then type exit
   speech-wifi        connect to a wireless network
+  speech-install-disk  install this system permanently on the PC's disk (erases it)
   doas ...           run something as root (no password)
 Other consoles (alt+F2 to F4) log in normally and are read by Speakup.
 TXT

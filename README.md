@@ -14,6 +14,8 @@ chime and a screen reader at a bash prompt.
 - A second partition for your files, grown to fill the stick on the first boot.
 - Packages you install and settings you change are kept on the stick (`speech-install`,
   `speech-save`).
+- Optional: `speech-install-disk` installs the same system on the PC's disk, spoken all the
+  way, so a machine that tests out well can boot it without the stick.
 - Boots on BIOS and UEFI machines (Secure Boot must be off). Two images: 64-bit for any PC
   since about 2007, and 32-bit for Pentium M, Core Duo, early Atom and older machines.
 
@@ -177,9 +179,36 @@ Commands:
 | `speech-save` | keep changes under `/etc` (network, tdsr settings, added services) |
 | `speech-wifi` | scan, pick a network, enter the password; remembered after `speech-save` |
 | `speech-audio-next` | send speech to the next sound card (HDMI vs analogue); then type `exit` |
+| `speech-install-disk` | install the talking system permanently on the PC's disk (erases it) |
 | `speech-help` | this list |
 
 Your files live in `/home/user`, on the stick's second partition.
+
+## Installing on the PC's disk
+
+The stick is meant to be used as it is: nothing on the computer is touched, and packages and
+settings you add stay on the stick. Once a machine has proved itself, `speech-install-disk`
+puts the same talking system on the PC's own disk, so it boots without the stick:
+
+1. Start the stick, then at the prompt type `speech-install-disk`.
+2. It lists the disks in the machine (the stick itself is left out), with sizes and models,
+   and asks which one to use. **Everything on that disk is erased.** It asks you to type the
+   word ERASE to go on, then for a password for the `user` account (Enter keeps none).
+3. Alpine's own installer then partitions the disk (MBR and syslinux on a BIOS machine, GPT
+   and grub on UEFI), installs the packages from the stick's repository (no network needed),
+   copies the configuration, builds the initramfs and writes the boot loader. The steps are
+   spoken as they happen; it takes a few minutes.
+4. It copies your files from the stick's data partition to the new `/home/user`, then asks
+   whether to restart. Remove the stick when it restarts.
+
+The installed system is the same talking setup: tdsr with both engines on the first console,
+Speakup on the others, `doas` without a password, the same commands. Changes are kept
+directly, so `speech-save` has nothing to do there, and `speech-install` is just apk. Package
+installs need the network, as on any Alpine system. There is no swap partition; `dd` a swap
+file if you want one.
+
+Tested in QEMU on BIOS (MBR, syslinux) and UEFI (GPT, grub) virtual machines, booting from the
+installed disk with the stick removed. Not yet on real hardware.
 
 ## If it does not talk
 

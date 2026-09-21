@@ -4,4 +4,5 @@
 # (apk update, apk add, then speech-save so the packages and the world list
 # are restored at the next boot from the stick's cache, no network needed.)
 [ $# -gt 0 ] || { echo "usage: speech-install package..."; exit 1; }
-doas apk update && doas apk add "$@" && exec /usr/bin/speech-save
+doas apk update && doas apk add "$@" || exit 1
+[ -e /etc/speech/installed ] || exec /usr/bin/speech-save

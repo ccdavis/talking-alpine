@@ -94,6 +94,22 @@ Everything runs rootless in a podman container (`build/Containerfile`): the FAT 
 filled with mtools and gets syslinux from the Linux installer on the image file, the ext4
 partition with `mkfs.ext4 -d`, and the two are concatenated behind an sfdisk MBR.
 
+## Installing to a disk (optional)
+
+`speech-install-disk` (in the package) wraps Alpine's `setup-disk -m sys -k lts -s 0`: it lists
+the disks minus the stick's, asks for the disk, the word ERASE and a password, answers the
+installer's own erase question on stdin, and afterwards mounts the new root to adjust it:
+`/etc/speech/installed` marker (the speech scripts then skip the data partition, lbu and the
+stick), stick repository and cache removed from apk's configuration, stick lines out of
+fstab, `/home/user` copied from the data partition, password via chpasswd. The boot-loader
+packages (syslinux, grub-bios, grub-efi, dosfstools, mkinitfs, lsblk) sit in the stick's
+repository without being installed on the stick (`build/repo-extra.txt`), so the install works
+offline. `ERASE_DISKS` is deliberately not used: setup-disk then takes the boot medium's disk to
+be the first SCSI disk, and when that is the target (stick sdb, target sda) it copies the
+module tree into RAM first, which fills it. QEMU tests: BIOS with network and UEFI without,
+each booted from the installed disk with the stick removed (`DISK=`, `BOOTDISK=1` in
+run/boot.sh, `run/mkdisk.sh`).
+
 ## Decisions
 
 - Alpine diskless rather than Debian live: boots to RAM in seconds, stick read-only while

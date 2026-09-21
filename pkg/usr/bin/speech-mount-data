@@ -2,6 +2,8 @@
 # Mount the SPEECHDATA partition (ext4, second partition of the stick) on
 # /home/user, once. Without it the home directory lives in RAM.
 mkdir -p /home/user
+# on a disk install (speech-install-disk) the home directory is on the disk
+[ -e /etc/speech/installed ] && { chown user:user /home/user; exit 0; }
 mountpoint -q /home/user && exit 0
 /usr/bin/speech-grow
 dev=$(findfs LABEL=SPEECHDATA 2>/dev/null)

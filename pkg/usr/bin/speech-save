@@ -6,5 +6,9 @@
 if [ "$(id -u)" != 0 ]; then
 	exec doas /usr/bin/speech-save "$@"
 fi
+if [ -e /etc/speech/installed ]; then
+	echo "This system is installed on a disk: changes are kept without saving."
+	exit 0
+fi
 echo "Saving system state to the stick..."
 lbu commit -d && echo "Done. Packages and settings will be restored at the next boot."

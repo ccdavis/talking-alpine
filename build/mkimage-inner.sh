@@ -55,7 +55,7 @@ echo "== packages"
 # stick. Downloads are kept in images/apks-extra between builds.
 EXTRA=$IMAGES_DIR/apks-extra; [ "$ARCH" = x86_64 ] || EXTRA=$IMAGES_DIR/apks-extra-$ARCH; mkdir -p $EXTRA
 apk --repositories-file $W/repos --keys-dir /etc/apk/keys --arch $ARCH fetch --recursive --output $EXTRA \
-    $(grep -v '^talkalpine$' $WORLD) linux-lts > $W/fetch.log 2>&1 || { tail -5 $W/fetch.log; exit 1; }
+    $(grep -v '^talkalpine$' $WORLD) linux-lts $(grep -v '^#' $A/build/repo-extra.txt) > $W/fetch.log 2>&1 || { tail -5 $W/fetch.log; exit 1; }
 mkdir -p $W/p1/apks/$ARCH
 cp $ISO/apks/$ARCH/*.apk $W/p1/apks/$ARCH/
 cp $EXTRA/*.apk $EXTRA_PKG_DIR/*.apk $W/p1/apks/$ARCH/
