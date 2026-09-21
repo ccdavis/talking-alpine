@@ -1,0 +1,5 @@
+#!/bin/sh
+# Runs from the `local` service after the network scripts. Gives `user` a
+# config if the data partition has none yet.
+[ -f /home/user/.tdsr.cfg ] || { cp /etc/speech/tdsr.cfg /home/user/.tdsr.cfg; chown user:user /home/user/.tdsr.cfg; }
+exit 0

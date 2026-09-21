@@ -1,0 +1,12 @@
+#!/bin/sh
+# Mount the SPEECHDATA partition (ext4, second partition of the stick) on
+# /home/user, once. Without it the home directory lives in RAM.
+mkdir -p /home/user
+mountpoint -q /home/user && exit 0
+/usr/bin/speech-grow
+dev=$(findfs LABEL=SPEECHDATA 2>/dev/null)
+if [ -n "$dev" ]; then
+	mount -o noatime "$dev" /home/user 2>/dev/null && resize2fs "$dev" >/dev/null 2>&1
+fi
+chown user:user /home/user
+exit 0

@@ -1,0 +1,24 @@
+#!/sbin/openrc-run
+# Unmute every sound card, start Speakup's software synth connection, and
+# play the ready chime: the first sound a blind user hears from the stick.
+description="Sound cards unmuted, Speakup connected to espeak-ng, ready chime"
+
+depend() {
+	need localmount
+	after modules hwdrivers alsa
+	before espeakup
+}
+
+start() {
+	ebegin "Preparing audio for speech"
+	# Give hotplugged codecs a moment; HDA codecs can appear after the
+	# controller.
+	i=0
+	while [ ! -e /proc/asound/cards ] || ! grep -q '^ *[0-9]' /proc/asound/cards; do
+		i=$((i + 1)); [ $i -gt 30 ] && break; sleep 0.2
+	done
+	/usr/bin/speech-unmute
+	# Speakup: software synth over /dev/softsynthu, spoken by espeakup
+	modprobe speakup_soft 2>/dev/null
+	eend 0
+}

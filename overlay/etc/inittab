@@ -1,0 +1,16 @@
+# /etc/inittab for the talking Alpine stick (busybox init)
+
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::wait:/sbin/openrc default
+
+# tty1: straight into the talking shell (rust-tdsr wrapping bash as `user`).
+# The session script re-runs whenever the shell exits.
+tty1::respawn:/usr/bin/speech-session
+# Ordinary logins on the other consoles (Speakup reads these).
+tty2::respawn:/sbin/getty 38400 tty2
+tty3::respawn:/sbin/getty 38400 tty3
+tty4::respawn:/sbin/getty 38400 tty4
+
+::ctrlaltdel:/sbin/reboot
+::shutdown:/sbin/openrc shutdown

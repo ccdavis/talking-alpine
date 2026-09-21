@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+# Keep Speakup quiet on tty1, where tdsr reads the screen, and talking on
+# the other consoles.
+description="Silence Speakup while the tdsr console is active"
+command=/usr/bin/speech-vtwatch
+command_background=true
+pidfile=/run/speech-vtwatch.pid
+
+depend() {
+	after espeakup
+}

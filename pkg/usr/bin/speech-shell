@@ -1,0 +1,12 @@
+#!/bin/sh
+# The login shell of `user`: on tty1 it is bash inside the tdsr screen reader,
+# on any other console (read by Speakup) or over ssh it is plain bash.
+# /etc/speech/debug makes tdsr log to ~/tdsr.log.
+case "$(tty 2>/dev/null)" in
+/dev/tty1)
+	set -- /bin/bash
+	[ -e /etc/speech/debug ] && set -- --debug "$@"
+	exec /usr/bin/tdsr "$@"
+	;;
+esac
+exec /bin/bash -l

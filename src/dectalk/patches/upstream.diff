@@ -1,0 +1,73 @@
+diff --git a/src/dapi/src/include/port.h b/src/dapi/src/include/port.h
+index 16cc241..53719ac 100644
+--- a/src/dapi/src/include/port.h
++++ b/src/dapi/src/include/port.h
+@@ -395,13 +395,13 @@ typedef U32 UINT;
+ #endif
+ 
+ typedef unsigned short DT_PIPE_T;
+-typedef long S32;
+-typedef unsigned long U32;
++typedef int S32;               /* DOS port: 32-bit even on LP64 hosts */
++typedef unsigned int U32;
+ typedef short S16;
+ typedef unsigned short U16;
+ typedef signed char S8;
+ typedef unsigned char U8;
+-typedef unsigned long DWORD;
++typedef unsigned int DWORD;
+ //typedef unsigned _int64 QWORD, * PQWORD; //tek 04aug97 sapi fixes
+ 
+ typedef void * DT_HANDLE;
+diff --git a/src/dapi/src/ph/ph_drwt01.c b/src/dapi/src/ph/ph_drwt01.c
+index fb616f6..7c64e4e 100644
+--- a/src/dapi/src/ph/ph_drwt01.c
++++ b/src/dapi/src/ph/ph_drwt01.c
+@@ -1055,6 +1055,7 @@ if (pDphsettar->lastone==-1)
+ #ifdef PRINTFDEBUG
+ 				printf ("\n");
+ #endif
++#ifndef ARM7 /* DOS port: the embedded handle has no log file */
+ 				if (pKsd_t->logflag & LOG_OUTPHON)
+ 				{
+ 					if (fprintf (phTTS->pLogFile, "\n") < 0)
+@@ -1064,6 +1065,7 @@ if (pDphsettar->lastone==-1)
+ 												  0L);
+ 					}
+ 				}
++#endif /* ARM7 */
+ #endif
+ 			}
+ 			/* keepdur = (pDph_t->allodurs[pDphsettar->np_drawt0] * NSAMP_FRAME / 10); */		/* eab need to keep orig value of dur */ 
+@@ -1915,6 +1917,7 @@ if (pDphsettar->lastone==-1)
+ #ifdef PRINTFDEBUG
+ 				printf ("\n");
+ #endif
++#ifndef ARM7 /* DOS port: the embedded handle has no log file */
+ 				if (pKsd_t->logflag & LOG_OUTPHON)
+ 				{
+ 					if (fprintf (phTTS->pLogFile, "\n") < 0)
+@@ -1924,6 +1927,7 @@ if (pDphsettar->lastone==-1)
+ 												  0L);
+ 					}
+ 				}
++#endif /* ARM7 */
+ #endif
+ 			}
+ 			/* keepdur = (pDph_t->allodurs[pDphsettar->np_drawt0] * NSAMP_FRAME / 10); */		
+@@ -2989,6 +2993,7 @@ if (pDphsettar->lastone==-1)
+ #ifdef PRINTFDEBUG
+ 				printf ("\n");
+ #endif
++#ifndef ARM7 /* DOS port: the embedded handle has no log file */
+ 				if (pKsd_t->logflag & LOG_OUTPHON)
+ 				{
+ 					if (fprintf (phTTS->pLogFile, "\n") < 0)
+@@ -2998,6 +3003,7 @@ if (pDphsettar->lastone==-1)
+ 												  0L);
+ 					}
+ 				}
++#endif /* ARM7 */
+ #endif
+ 
+ 			}

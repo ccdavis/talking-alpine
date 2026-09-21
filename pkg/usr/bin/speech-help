@@ -1,0 +1,18 @@
+#!/bin/sh
+cat <<'TXT'
+Talking Alpine, a screen reader stick.
+
+Screen reader (tdsr) keys, alt plus a letter:
+  u i o   previous, current, next line       j k l   previous, current, next word
+  m , .   previous, current, next character  k k     spell the word
+  U O     top, bottom of screen              x       silence
+  s       switch engine (eSpeak / DECtalk)   c       config menu (rate, voice)
+  q       quiet mode                         t       full-screen program mode
+Commands:
+  speech-install pkg...  install packages from the network, keep them on the stick
+  speech-save        save settings under /etc to the stick
+  speech-audio-next  send speech to the next sound card, then type exit
+  speech-wifi        connect to a wireless network
+  doas ...           run something as root (no password)
+Other consoles (alt+F2 to F4) log in normally and are read by Speakup.
+TXT

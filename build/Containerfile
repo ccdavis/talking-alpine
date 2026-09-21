@@ -1,0 +1,11 @@
+# Build environment for the talking Alpine USB stick: Alpine 3.24 with the Rust
+# toolchain (musl), the C toolchain for the DECtalk engine, espeak-ng and ALSA
+# for in-container tests, and the tools that assemble the disk image without
+# root (mtools for FAT, mkfs.ext4 -d for ext4, syslinux for the MBR/VBR).
+FROM docker.io/library/alpine:3.24
+RUN apk add --no-cache \
+    build-base rust cargo git bash coreutils python3 \
+    alsa-lib alsa-utils espeak-ng espeak-ng-dev alsa-lib-dev \
+    syslinux grub grub-efi grub-bios mtools dosfstools e2fsprogs \
+    xorriso apk-tools curl file util-linux sfdisk meson ninja pkgconf abuild cpio openssl
+WORKDIR /work

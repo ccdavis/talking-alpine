@@ -1,0 +1,10 @@
+#!/bin/sh
+# Save the system state (packages installed with apk add, everything under
+# /etc, the tdsr config) to the stick so it is there after a reboot.
+# Downloaded packages are already in the stick's cache; lbu records which
+# ones to install at boot.
+if [ "$(id -u)" != 0 ]; then
+	exec doas /usr/bin/speech-save "$@"
+fi
+echo "Saving system state to the stick..."
+lbu commit -d && echo "Done. Packages and settings will be restored at the next boot."

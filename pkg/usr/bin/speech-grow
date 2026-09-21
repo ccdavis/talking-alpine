@@ -1,0 +1,25 @@
+#!/bin/sh
+# First boot on a stick bigger than the image: grow partition 2 (SPEECHDATA)
+# to the end of the stick. Safe to run again; does nothing when there is no
+# room. Called by speech-mount-data before the partition is mounted.
+dev=$(findfs LABEL=SPEECHDATA 2>/dev/null) || exit 0
+[ -n "$dev" ] || exit 0
+case "$dev" in
+*[0-9]p[0-9]*) disk=${dev%p[0-9]*}; num=${dev##*p};;   # nvme0n1p2, mmcblk0p2
+*) disk=${dev%[0-9]*}; num=${dev##*[a-z]};;             # sda2
+esac
+[ -b "$disk" ] || exit 0
+total=$(blockdev --getsz "$disk" 2>/dev/null) || exit 0
+# start and end sector of the partition, from the disk's table
+set -- $(sfdisk -l -o Device,Start,End "$disk" 2>/dev/null | awk -v d="$dev" '$1 == d { print $2, $3 }')
+start=$1; end=$2
+case "$start$end" in *[!0-9]*|"") exit 0;; esac
+# leave the last MiB alone; grow only if more than 64 MiB is unused
+[ $((total - end)) -gt 131072 ] || exit 0
+newsize=$((total - 2048 - start))
+echo ", +" | sfdisk --no-reread --no-tell-kernel -q -N "$num" "$disk" 2>/dev/null || exit 0
+# tell the kernel (the boot partition on the same disk is mounted, so a
+# table re-read is refused); the filesystem is grown online after mounting
+resizepart "$disk" "$num" "$newsize" 2>/dev/null || partx -u "$disk" 2>/dev/null
+echo "Data partition grown to fill the stick."
+exit 0

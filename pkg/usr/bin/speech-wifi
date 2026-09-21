@@ -1,0 +1,32 @@
+#!/bin/sh
+# Wireless the simple way: list networks, ask for one and its password, bring
+# the interface up with wpa_supplicant and udhcpc, and arrange for the same
+# network to come up at boot (speech-save keeps that).
+iface=$(ls /sys/class/net | grep -m1 '^wl')
+[ -z "$iface" ] && { echo "No wireless interface found (is the firmware for this card on the stick? run: doas dmesg | grep -i firmware)."; exit 1; }
+doas ip link set "$iface" up
+echo "Scanning..."
+doas iw dev "$iface" scan 2>/dev/null | sed -n 's/^[[:space:]]*SSID: \(.*\)/  \1/p' | grep -v '^  $' | sort -u
+printf 'Network name: '; read -r ssid
+[ -n "$ssid" ] || exit 1
+printf 'Password (empty for an open network): '; read -r psk
+conf=/etc/wpa_supplicant/wpa_supplicant.conf
+doas mkdir -p /etc/wpa_supplicant
+if [ -n "$psk" ]; then
+	doas sh -c "wpa_passphrase '$ssid' '$psk' > $conf"
+else
+	doas sh -c "printf 'network={\n\tssid=\"%s\"\n\tkey_mgmt=NONE\n}\n' '$ssid' > $conf"
+fi
+doas chmod 600 $conf
+doas sh -c "printf 'wpa_supplicant_args=\"-i %s -c %s\"\n' $iface $conf > /etc/conf.d/wpa_supplicant"
+if ! grep -q "^iface $iface" /etc/network/interfaces; then
+	doas sh -c "printf '\nauto %s\niface %s inet dhcp\n' $iface $iface >> /etc/network/interfaces"
+fi
+doas rc-update -q add wpa_supplicant boot 2>/dev/null
+doas rc-service wpa_supplicant restart >/dev/null 2>&1 || doas wpa_supplicant -B -i "$iface" -c $conf
+echo "Waiting for an address..."
+if doas udhcpc -i "$iface" -q -n -t 10 >/dev/null 2>&1; then
+	echo "Connected to $ssid. Run speech-save to keep this network for the next boot."
+else
+	echo "No address yet. Check the password, or try again in a moment."
+fi

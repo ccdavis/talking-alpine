@@ -1,0 +1,16 @@
+#!/bin/sh
+# Switch speech to the next sound card (alt+s inside tdsr switches engines;
+# this switches devices). Rewrites /etc/asound.conf and tells the user, who
+# then restarts tdsr (exit the shell; inittab starts it again).
+cards=$(grep -o '^ *[0-9]*' /proc/asound/cards | tr -d ' ')
+cur=$(sed -n 's/^defaults.pcm.card *\([0-9]*\)/\1/p' /etc/asound.conf 2>/dev/null)
+next=""; first=""; take=0
+for c in $cards; do
+	[ -z "$first" ] && first=$c
+	[ $take = 1 ] && { next=$c; break; }
+	[ "$c" = "${cur:-0}" ] && take=1
+done
+[ -z "$next" ] && next=$first
+doas sh -c "printf 'defaults.pcm.card %s\ndefaults.ctl.card %s\ndefaults.pcm.dmix.rate 48000\n' $next $next > /etc/asound.conf"
+name=$(sed -n "s/^ *$next \[[^]]*\]: *//p" /proc/asound/cards)
+echo "Speech now uses sound card $next: $name. Type exit to restart the screen reader on it."

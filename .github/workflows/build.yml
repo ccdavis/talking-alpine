@@ -1,0 +1,27 @@
+name: build
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: rust-tdsr
+        run: git clone --depth 1 https://github.com/ccdavis/rust-tdsr "$HOME/rust-tdsr"
+      - name: sources (Alpine ISO, espeakup, DECtalk)
+        run: bash run/get-alpine.sh
+      - name: build container
+        run: docker build -t a11y-alpine-build build
+      - name: tdsr (musl, dectalk) and espeakup
+        run: PODMAN=docker bash run/build.sh
+      - name: image
+        run: PODMAN=docker bash run/mkimage.sh && ls -la dist/
+      - name: zip
+        run: cd dist && zip -q -9 talkalpine.img.zip talkalpine.img && sha256sum talkalpine.img.zip tdsr espeakup > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: talkalpine
+          path: |
+            dist/talkalpine.img.zip
+            dist/tdsr
+            dist/espeakup
+            dist/SHA256SUMS

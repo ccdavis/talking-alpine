@@ -1,0 +1,20 @@
+#!/bin/sh
+# The tty1 session: mount the data partition, then run the talking shell as
+# `user`. Runs as root from inittab; the screen reader and shell do not.
+export TERM=linux
+# If the session keeps ending at once (a broken shell), do not chime every
+# second: wait, and let the console show why.
+now=$(cut -d. -f1 /proc/uptime); last=$(cat /run/speech-session.last 2>/dev/null || echo 0)
+echo "$now" > /run/speech-session.last
+if [ $((now - last)) -lt 10 ]; then sleep 5; fi
+/usr/bin/speech-mount-data
+# A sound card that appeared after the speech-audio service ran (codecs
+# that load firmware first) is unmuted here.
+/usr/bin/speech-unmute
+chvt 1 2>/dev/null
+# Start-up chime through ALSA, so the user knows audio works even before
+# the screen reader says anything.
+aplay -q /usr/share/talkalpine/speech-ready.wav 2>/dev/null
+# login sets up tty1 as the controlling terminal and runs the user's shell,
+# speech-shell, which is tdsr around bash on this console.
+exec /bin/login -f user

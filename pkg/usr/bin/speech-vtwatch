@@ -1,0 +1,17 @@
+#!/bin/sh
+# Keep Speakup and tdsr from reading the same screen: while tdsr is running
+# and tty1 is the active console, Speakup is silenced; on the other consoles,
+# and during the boot before tdsr starts, it speaks.
+# /sys/class/tty/tty0/active names the foreground VT. speakup's silent file
+# takes a bit mask: 1 = set, 2 = screen output, 4 = key echo. 7 silences
+# both, 6 clears both.
+last=""
+while :; do
+	vt=$(cat /sys/class/tty/tty0/active 2>/dev/null)
+	if [ "$vt" = tty1 ] && pgrep -x tdsr >/dev/null 2>&1; then s=7; else s=6; fi
+	if [ "$s" != "$last" ]; then
+		echo $s > /sys/accessibility/speakup/silent 2>/dev/null
+		last=$s
+	fi
+	sleep 0.3
+done

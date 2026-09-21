@@ -1,0 +1,18 @@
+#!/bin/sh
+# Unmute and raise every playback control on every card. alsactl init applies
+# sane defaults per codec; the amixer loop then makes sure the usual controls
+# are audible (some codecs leave Speaker or Headphone muted).
+for card in /proc/asound/card[0-9]*; do
+	[ -d "$card" ] || continue
+	c=${card##*card}
+	alsactl init "$c" >/dev/null 2>&1
+	for ctl in Master Headphone Speaker Front PCM "Master Mono" "Speaker+LO" "Line Out" Playback; do
+		amixer -q -c "$c" sset "$ctl" unmute >/dev/null 2>&1
+		amixer -q -c "$c" sset "$ctl" "${SPEECH_VOLUME:-85}%" >/dev/null 2>&1
+	done
+	# Some HDA codecs mute the speaker while a "jack" is thought to be
+	# plugged; leave auto-mute on (headphones should still switch) but make
+	# sure the digital path is open.
+	amixer -q -c "$c" sset "Auto-Mute Mode" Enabled >/dev/null 2>&1
+done
+exit 0

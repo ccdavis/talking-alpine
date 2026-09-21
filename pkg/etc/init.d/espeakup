@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+# Speakup's software synthesizer: reads /dev/softsynthu and speaks through
+# espeak-ng. Speaks the consoles (tty2..tty4) and the end of the boot.
+description="Speakup software speech through espeak-ng"
+command=/usr/bin/espeakup
+command_args="--debug --default-voice=en-us"
+command_background=true
+pidfile=/run/espeakup.pid
+output_log=/dev/null
+error_log=/dev/null
+
+depend() {
+	need localmount speech-audio
+	after modules
+}
+
+start_pre() {
+	modprobe speakup_soft 2>/dev/null
+	i=0
+	while [ ! -c /dev/softsynthu ] && [ $i -lt 20 ]; do i=$((i + 1)); sleep 0.1; done
+	return 0
+}
