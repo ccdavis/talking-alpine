@@ -14,15 +14,20 @@ chime and a screen reader at a bash prompt.
 - A second partition for your files, grown to fill the stick on the first boot.
 - Packages you install and settings you change are kept on the stick (`speech-install`,
   `speech-save`).
-- Boots on BIOS and UEFI machines (x86-64; Secure Boot must be off).
+- Boots on BIOS and UEFI machines (Secure Boot must be off). Two images: 64-bit for any PC
+  since about 2007, and 32-bit for Pentium M, Core Duo, early Atom and older machines.
 
 Status: built and exercised in QEMU (BIOS and UEFI, Intel HD Audio). **Not yet tested on real
 hardware.** Reports welcome.
 
 ## Download and write the stick
 
-1. Get `talkalpine.img.zip` from the [latest release](https://github.com/ccdavis/talking-alpine/releases/latest)
-   and unzip it. `talkalpine.img` is a raw disk image of about 1.4 GB.
+1. Get the image from the [latest release](https://github.com/ccdavis/talking-alpine/releases/latest)
+   and unzip it:
+   - `talkalpine.img.zip` for any 64-bit PC (everything sold since about 2007, and many from
+     2004 on). Unzips to `talkalpine.img`, a raw disk image of about 1.4 GB.
+   - `talkalpine-x86.img.zip` for a 32-bit-only machine: see "Which image: 64-bit or
+     32-bit?" below. Unzips to `talkalpine-x86.img`.
 2. Write it to a USB stick of **2 GB or more**, following the steps for your system below.
    Writing erases everything on the stick. The image must be written as a raw disk image
    (sector by sector), not copied onto the stick as a file.
@@ -88,6 +93,51 @@ Either tool below works with a screen reader.
 Windows may report that the stick needs to be formatted after writing, because it cannot
 read the Linux partition. Choose Cancel; the stick is fine.
 
+### Which image: 64-bit or 32-bit?
+
+The 64-bit image needs a CPU with the x86-64 instructions. Almost every PC made since 2007
+has one, and so do many from 2004 to 2006. If you boot it on an older machine, the kernel
+stops at once with a message on the screen and you hear nothing after the BIOS beep: that is
+the sign to use the 32-bit image, which runs on any Pentium-class or newer CPU with 512 MB of
+RAM or more (the system itself takes about 90 MB of RAM plus the kernel; 256 MB is too
+little for the RAM disk it runs from). Machines that need the 32-bit image include:
+
+- **Pentium M and Celeron M laptops** (2003 to 2008): the Centrino era. IBM/Lenovo ThinkPad
+  T40, T41, T42, T43, R50, R51, R52, X31, X32, X40, X41; Dell Latitude D400, D410, D505,
+  D600, D610, D800, D810, Inspiron 600m, 700m, 8600; HP/Compaq nc4000, nc6000, nc6220,
+  nx6110, nc8230; Toshiba Portege M200, R100, Tecra M2, M3, Satellite A/M series; Fujitsu
+  LifeBook P and S series; Sony VAIO of the period; Acer TravelMate and Aspire of the period.
+- **Core Duo and Core Solo laptops** (2006 to early 2007, "Yonah"): the first Intel Macs
+  (MacBook and MacBook Pro of early 2006, iMac and Mac mini of 2006; they boot USB sticks
+  with the Option key), ThinkPad T60 and X60 with a Core Duo (the Core 2 Duo versions are
+  64-bit), Dell Latitude D620 and Inspiron 6400 with Core Duo, many early 2006 laptops. The
+  CPU name "Core Duo" or "Core Solo" without the "2" is the tell.
+- **Intel Atom netbooks** with the N270, N280, Z5xx or the original 230 (2008 to 2010): Asus
+  Eee PC 901, 1000, 1000H, 1005HA; Acer Aspire One D150, D250; Dell Mini 9, 10, 10v; HP Mini
+  1000, 110, 210; MSI Wind U100; Samsung NC10; Lenovo IdeaPad S10. (Atom N450, N455, N550,
+  D510 and later are 64-bit.)
+- **Pentium 4 and Celeron desktops before 2005** (Willamette and Northwood cores, and every
+  Pentium III, Pentium II, Celeron of the 1990s), and AMD **Athlon XP, Duron, Sempron (socket
+  A)** and **Athlon/K6** desktops. A Pentium 4 from 2005 on (Prescott with EM64T) and any
+  Athlon 64 are 64-bit.
+- **Thin clients and small-board PCs** with VIA C3, C7 or Eden, AMD Geode LX or NX, or Intel
+  Atom Z5xx: Wyse, HP t5xxx and Neoware thin clients, Fit-PC 1, and industrial boards.
+
+How to tell on a machine you can still run: on Linux `grep -c lm /proc/cpuinfo` prints 0 on a
+32-bit-only CPU; on Windows the System information page says "x64-based PC" for a 64-bit
+one; a CPU name can be looked up at ark.intel.com, where "Instruction Set 64-bit" is listed.
+When in doubt, try the 64-bit image first, then the 32-bit one.
+
+The 32-bit image is the same system: 32-bit Alpine, kernel built for Pentium-class CPUs (no
+PAE needed), tdsr with both engines, tested in QEMU on a Pentium III with 512 MB. It carries
+only the wireless firmware such machines can use (Intel 3945 and 4965, Ralink, Realtek,
+Atheros USB) instead of the 100 MB of modern firmware in the 64-bit image, to keep the RAM
+disk small. Intel PRO/Wireless 2100 and 2200 cards need firmware Alpine does not ship;
+Broadcom cards of the period need firmware extracted from Windows drivers. Wired Ethernet
+always works. The USB stick must be bootable from the BIOS, which most machines from
+about 2002 on can do; older ones may need a BIOS update or a boot floppy such as Plop Boot
+Manager to chain-load USB.
+
 ### Booting from the stick
 
 Most machines open a boot menu with a key at power-on: F12 on Dell, Lenovo and many others,
@@ -151,6 +201,10 @@ Your files live in `/home/user`, on the stick's second partition.
     bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk), espeakup
     bash run/mkimage.sh         # dist/talkalpine.img   (TEST=1 adds a serial getty + tdsr debug log)
     bash run/boot.sh            # QEMU test boot (BIOS); UEFI=1 for OVMF; NONET=1 offline
+
+`ARCH=x86` in front of each of those builds the 32-bit image (`dist/x86/talkalpine-x86.img`)
+in a 32-bit Alpine container; `ARCH=x86 CPU=pentium3 bash run/boot.sh` boots it on a
+32-bit-only virtual CPU.
 
 Everything runs in a rootless podman container (`PODMAN=docker` works too); no loop devices.
 `PLAN.md` explains the design and the decisions; `DEVELOPING.md` the QEMU harness.

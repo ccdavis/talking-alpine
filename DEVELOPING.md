@@ -28,6 +28,10 @@ at a bash prompt as `user` (no password; `doas` for root). `speech-help` lists t
     bash run/mkimage.sh         # dist/talkalpine.img   (TEST=1: serial getty + tdsr debug log)
     bash run/boot.sh            # QEMU test boot (BIOS); UEFI=1 for OVMF
 
+`ARCH=x86` before each command builds the 32-bit image (`dist/x86/talkalpine-x86.img`) in
+the `i386/alpine` container; `ARCH=x86 CPU=pentium3 MEM=512 bash run/boot.sh` boots it on a
+32-bit-only virtual CPU. `release.sh` builds both.
+
 Rootless podman, no loop devices. `run/serial.sh`, `run/mon.sh`, `run/type.sh`, `run/shot.sh`
 drive the guest; `run/segrms.py` finds sound in the captured wav.
 

@@ -1,0 +1,11 @@
+# Packages left out of the 32-bit image, which targets machines from before 2009 and runs its
+# root filesystem from RAM: firmware for chips that only exist in 64-bit-era hardware. The
+# iwlwifi 3945 and 4965 files (Core Duo era) are taken out of linux-firmware-intel and shipped
+# in the talkalpine package instead (see mkimage-inner.sh), which saves over 100 MB of RAM.
+linux-firmware-intel
+linux-firmware-brcm
+linux-firmware-ath10k
+linux-firmware-mediatek
+linux-firmware-rtw88
+linux-firmware-rtw89
+sof-firmware

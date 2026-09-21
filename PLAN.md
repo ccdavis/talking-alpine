@@ -106,5 +106,9 @@ partition with `mkfs.ext4 -d`, and the two are concatenated behind an sfdisk MBR
 - `alsactl init` for unmuting, not a hand-written control list.
 - `default` ALSA device through dmix so tdsr and espeakup can play at the same time.
 - Direct ALSA from tdsr, no speech-dispatcher: cancel latency is the device buffer (50 ms).
-- x86_64 only for now. Pentium M and pre-Prescott Pentium 4 machines need Alpine's x86 build,
-  which is the same recipe with the x86 ISO and a 32-bit tdsr.
+- A 32-bit image (`ARCH=x86`: the Alpine x86 ISO, tdsr and DECtalk built in the
+  `i386/alpine` container, `dist/x86/talkalpine-x86.img`) for Pentium M, Core Duo, early Atom
+  and older machines. Alpine's x86 kernel is built for i586 without PAE, so nothing after
+  the original Pentium is excluded. It drops the firmware for wireless chips that only exist
+  in 64-bit-era machines (`build/world-drop-x86.txt`) to keep the RAM root small; the x86 ISO
+  also carries a 32-bit UEFI loader (bootia32.efi), which is copied when present.

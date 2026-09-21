@@ -7,15 +7,21 @@
 # Env: TEST=1 adds a serial getty for the QEMU harness; P1_MB, P2_MB sizes.
 set -eu
 A=/work/alpine
+ARCH=${ARCH:-x86_64}
 IMAGES_DIR=${IMAGES_DIR:-$A/images}
-ISO=$IMAGES_DIR/iso
-DIST=$A/dist
+ISO=$IMAGES_DIR/$(basename "${ISODIR:-iso}")
+DIST=$A/${DISTDIR:-dist}
+IMGNAME=talkalpine.img; [ "$ARCH" = x86_64 ] || IMGNAME=talkalpine-$ARCH.img
 W=/tmp/mk
 P1_MB=${P1_MB:-1200}
 P2_MB=${P2_MB:-160}
 rm -rf $W; mkdir -p $W/p1 $W/p2 $W/ovl $DIST
 EXTRA_PKG_DIR=$W/pkgs; mkdir -p $EXTRA_PKG_DIR
-ARCH=x86_64
+printf '%s\n' "$ISO/apks" https://dl-cdn.alpinelinux.org/alpine/v3.24/main https://dl-cdn.alpinelinux.org/alpine/v3.24/community > $W/repos
+# the world list, minus the packages build/world-drop-$ARCH.txt leaves out of this image
+WORLD=$W/world; grep -v '^#' $A/overlay/etc/apk/world > $WORLD
+if [ -f $A/build/world-drop-$ARCH.txt ]; then grep -v '^#' $A/build/world-drop-$ARCH.txt | grep -v -x -F -f - $WORLD > $WORLD.t && mv $WORLD.t $WORLD; fi
+if [ -f $A/build/world-add-$ARCH.txt ]; then grep -v '^#' $A/build/world-add-$ARCH.txt >> $WORLD; fi
 KEY=$A/keys/talkalpine.rsa
 
 echo "== talkalpine package"
@@ -28,7 +34,15 @@ PKG=$W/pkgroot; rm -rf $PKG; mkdir -p $PKG/usr/bin $PKG/usr/share/talkalpine
 cp -a $A/pkg/. $PKG/
 install -m 755 $DIST/tdsr $PKG/usr/bin/tdsr
 install -m 755 $DIST/espeakup $PKG/usr/bin/espeakup
-mkdir -p $W/abuild/talkalpine && cp $A/build/talkalpine/APKBUILD $W/abuild/talkalpine/
+if [ "$ARCH" = x86 ]; then
+    # Only the Core Duo era Intel wireless firmware, out of the 100+ MB linux-firmware-intel
+    FW=$IMAGES_DIR/fw-cache; mkdir -p $FW
+    ls $FW/linux-firmware-intel-*.apk >/dev/null 2>&1 || apk --repositories-file $W/repos --keys-dir /etc/apk/keys --arch $ARCH fetch --output $FW linux-firmware-intel >/dev/null
+    mkdir -p $PKG/lib/firmware
+    tar -xzf $FW/linux-firmware-intel-*.apk -C $PKG --wildcards 'lib/firmware/iwlwifi-3945-*' 'lib/firmware/iwlwifi-4965-*' 2>/dev/null
+    ls $PKG/lib/firmware/
+fi
+mkdir -p $W/abuild/talkalpine && sed "s/^arch=.*/arch=\"$ARCH\"/" $A/build/talkalpine/APKBUILD > $W/abuild/talkalpine/APKBUILD
 cp $A/overlay/etc/apk/keys/talkalpine.rsa.pub /etc/apk/keys/   # so abuild and apk index trust the package
 ( cd $W/abuild/talkalpine && TALKALPINE_ROOT=$PKG PACKAGER_PRIVKEY=$KEY PACKAGER="Talking Alpine" \
   abuild -F -d -P $W/repo > $W/abuild.log 2>&1 || { tail -8 $W/abuild.log; exit 1; } )
@@ -39,10 +53,9 @@ echo "== packages"
 # Every package in /etc/apk/world with its dependencies, from the ISO's own
 # repository first and the 3.24 mirror for the rest, into a repository on the
 # stick. Downloads are kept in images/apks-extra between builds.
-EXTRA=$IMAGES_DIR/apks-extra; mkdir -p $EXTRA
-printf '%s\n' "$ISO/apks" https://dl-cdn.alpinelinux.org/alpine/v3.24/main https://dl-cdn.alpinelinux.org/alpine/v3.24/community > $W/repos
+EXTRA=$IMAGES_DIR/apks-extra; [ "$ARCH" = x86_64 ] || EXTRA=$IMAGES_DIR/apks-extra-$ARCH; mkdir -p $EXTRA
 apk --repositories-file $W/repos --keys-dir /etc/apk/keys --arch $ARCH fetch --recursive --output $EXTRA \
-    $(grep -v '^#' $A/overlay/etc/apk/world | grep -v '^talkalpine$') linux-lts > $W/fetch.log 2>&1 || { tail -5 $W/fetch.log; exit 1; }
+    $(grep -v '^talkalpine$' $WORLD) linux-lts > $W/fetch.log 2>&1 || { tail -5 $W/fetch.log; exit 1; }
 mkdir -p $W/p1/apks/$ARCH
 cp $ISO/apks/$ARCH/*.apk $W/p1/apks/$ARCH/
 cp $EXTRA/*.apk $EXTRA_PKG_DIR/*.apk $W/p1/apks/$ARCH/
@@ -56,12 +69,13 @@ cp $ISO/apks/.boot_repository $W/p1/apks/.boot_repository
 echo "   $(ls $W/p1/apks/$ARCH/*.apk | wc -l) packages, $(du -sh $W/p1/apks | cut -f1)"
 # check: does apk accept the repository with our key, offline?
 mkdir -p $W/chk/etc/apk/keys && cp $A/overlay/etc/apk/keys/talkalpine.rsa.pub $W/chk/etc/apk/keys/
-apk --root $W/chk --keys-dir $W/chk/etc/apk/keys --repository $W/p1/apks --no-network --no-scripts --arch $ARCH add --initdb $(grep -v '^#' $A/overlay/etc/apk/world) > $W/chk.log 2>&1 || { tail -5 $W/chk.log; exit 1; }
+apk --root $W/chk --keys-dir $W/chk/etc/apk/keys --repository $W/p1/apks --no-network --no-scripts --arch $ARCH add --initdb $(cat $WORLD) > $W/chk.log 2>&1 || { tail -5 $W/chk.log; exit 1; }
 echo "   repository verified: $(tail -1 $W/chk.log)"
 rm -rf $W/chk
 
 echo "== apkovl"
 cp -a $A/overlay/etc $W/ovl/
+cp $WORLD $W/ovl/etc/apk/world
 if [ "${TEST:-0}" = 1 ]; then
     echo 'ttyS0::respawn:/sbin/getty -L 115200 ttyS0 vt100' >> $W/ovl/etc/inittab
     touch $W/ovl/etc/speech/debug
@@ -75,8 +89,12 @@ mkdir -p $W/p1/boot/syslinux $W/p1/boot/grub $W/p1/efi/boot $W/p1/cache
 cp $ISO/boot/vmlinuz-lts $ISO/boot/initramfs-lts $ISO/boot/modloop-lts $W/p1/boot/
 cp $A/boot/syslinux.cfg $W/p1/boot/syslinux/syslinux.cfg
 cp /usr/share/syslinux/ldlinux.c32 $W/p1/boot/syslinux/
-cp $A/boot/grub.cfg $W/p1/boot/grub/grub.cfg
-cp $ISO/efi/boot/bootx64.efi $W/p1/efi/boot/bootx64.efi
+if ls $ISO/efi/boot/*.efi >/dev/null 2>&1; then   # UEFI loader from the ISO (bootx64.efi, or bootia32.efi on x86)
+    cp $A/boot/grub.cfg $W/p1/boot/grub/grub.cfg
+    cp $ISO/efi/boot/*.efi $W/p1/efi/boot/
+else
+    rm -rf $W/p1/boot/grub $W/p1/efi
+fi
 cp $A/boot/README.txt $W/p1/README.txt
 touch $W/p1/cache/.keep
 
@@ -97,7 +115,7 @@ rm -f $W/p2.img; truncate -s ${P2_MB}M $W/p2.img
 mkfs.ext4 -q -L SPEECHDATA -d $W/p2 -E root_owner=1000:1000 $W/p2.img
 
 echo "== disk image"
-IMG=$DIST/talkalpine.img
+IMG=$DIST/$IMGNAME
 P1_START=2048
 P1_SECT=$((P1_MB * 2048))
 P2_START=$((P1_START + P1_SECT))

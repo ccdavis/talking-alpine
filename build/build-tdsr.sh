@@ -3,13 +3,15 @@
 # rust-tdsr with the dectalk feature for x86_64 musl. Output: dist/tdsr
 set -e
 A=/work/alpine
-make -C $A/src/dectalk -j"$(nproc)" libdectalk.a
+DIST=$A/${DISTDIR:-dist}
+ARCH=${ARCH:-x86_64}
+make -C $A/src/dectalk -j"$(nproc)" ARCH=$ARCH out-$ARCH/libdectalk.a
 cd /work/rust-tdsr
-export CARGO_HOME=/cargo-home CARGO_TARGET_DIR=/work/rust-tdsr/target-musl
-export DECTALK_LIB_DIR=$A/src/dectalk
+export CARGO_HOME=/cargo-home CARGO_TARGET_DIR=/work/rust-tdsr/target-musl-$ARCH
+export DECTALK_LIB_DIR=$A/src/dectalk/out-$ARCH
 cargo build --release --no-default-features --features dectalk
-mkdir -p $A/dist
-cp target-musl/release/tdsr $A/dist/tdsr
-strip $A/dist/tdsr
-ls -la $A/dist/tdsr
-file $A/dist/tdsr
+mkdir -p $DIST
+cp target-musl-$ARCH/release/tdsr $DIST/tdsr
+strip $DIST/tdsr
+ls -la $DIST/tdsr
+file $DIST/tdsr

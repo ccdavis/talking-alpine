@@ -2,6 +2,7 @@ images/
 images
 src/upstream/
 src/dectalk/build/
+src/dectalk/out-*/
 src/dectalk/libdectalk.a
 src/dectalk/dtsay
 src/dectalk/*.wav
@@ -23,3 +24,5 @@ dist/espeakup
 run/*.raw
 release.log
 dist/SHA256SUMS
+dist/x86/
+dist/*-x86

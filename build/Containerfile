@@ -2,7 +2,8 @@
 # toolchain (musl), the C toolchain for the DECtalk engine, espeak-ng and ALSA
 # for in-container tests, and the tools that assemble the disk image without
 # root (mtools for FAT, mkfs.ext4 -d for ext4, syslinux for the MBR/VBR).
-FROM docker.io/library/alpine:3.24
+ARG BASE=docker.io/library/alpine:3.24
+FROM $BASE
 RUN apk add --no-cache \
     build-base rust cargo git bash coreutils python3 \
     alsa-lib alsa-utils espeak-ng espeak-ng-dev alsa-lib-dev \

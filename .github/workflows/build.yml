@@ -3,6 +3,12 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   image:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, x86]
+    env:
+      ARCH: ${{ matrix.arch }}
+      PODMAN: docker
     steps:
       - uses: actions/checkout@v4
       - name: rust-tdsr
@@ -11,19 +17,19 @@ jobs:
         run: sudo apt-get install -y -q xorriso zip
       - name: sources (Alpine ISO, espeakup, DECtalk)
         run: bash run/get-alpine.sh
-      - name: build container
-        run: docker build -f build/Containerfile -t a11y-alpine-build build
       - name: tdsr (musl, dectalk) and espeakup
-        run: PODMAN=docker bash run/build.sh
+        run: bash run/build.sh
       - name: image
-        run: PODMAN=docker bash run/mkimage.sh && ls -la dist/
+        run: bash run/mkimage.sh && find dist -type f | xargs ls -la
       - name: zip
-        run: cd dist && zip -q -9 talkalpine.img.zip talkalpine.img && sha256sum talkalpine.img.zip tdsr espeakup > SHA256SUMS
+        run: cd dist && for f in $(find . -name 'talkalpine*.img'); do zip -q -9 -j "$(basename $f).zip" "$f"; done && sha256sum *.zip $(find . -name tdsr -o -name espeakup) > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: talkalpine
+          name: talkalpine-${{ matrix.arch }}
           path: |
-            dist/talkalpine.img.zip
+            dist/*.zip
             dist/tdsr
             dist/espeakup
+            dist/x86/tdsr
+            dist/x86/espeakup
             dist/SHA256SUMS

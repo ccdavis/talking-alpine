@@ -1,0 +1,3 @@
+# Packages added to the 32-bit image: the top-level firmware files (Ralink rt2860/rt2870/rt73
+# and friends, common in netbooks and PC Card adapters), 5 MB.
+linux-firmware-other
