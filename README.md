@@ -22,16 +22,79 @@ hardware.** Reports welcome.
 ## Download and write the stick
 
 1. Get `talkalpine.img.zip` from the [latest release](https://github.com/ccdavis/talking-alpine/releases/latest)
-   and unzip it: `talkalpine.img` is a 1.4 GB raw disk image.
-2. Write it to a USB stick of **2 GB or more**. Everything on the stick is erased.
-   - Linux or macOS: find the stick's device (`lsblk` / `diskutil list`), then
-     `sudo dd if=talkalpine.img of=/dev/sdX bs=4M status=progress conv=fsync`
-     (`/dev/rdiskN` on macOS). Double-check the device name.
-   - Windows: [Rufus](https://rufus.ie) in "DD Image" mode, or
-     [balenaEtcher](https://etcher.balena.io). Both are screen-reader accessible.
-3. Boot the PC from the stick. On most machines a key at power-on opens a boot menu
-   (F12, F11, F8, Esc or F2 depending on the maker); otherwise set the USB stick first in the
-   firmware's boot order. With UEFI, disable Secure Boot.
+   and unzip it. `talkalpine.img` is a raw disk image of about 1.4 GB.
+2. Write it to a USB stick of **2 GB or more**, following the steps for your system below.
+   Writing erases everything on the stick. The image must be written as a raw disk image
+   (sector by sector), not copied onto the stick as a file.
+3. Boot the PC from the stick (see "Booting from the stick").
+
+`SHA256SUMS` in the release lists the checksums if you want to verify the download
+(`sha256sum talkalpine.img.zip` on Linux, `shasum -a 256 talkalpine.img.zip` on macOS,
+`certutil -hashfile talkalpine.img.zip SHA256` on Windows).
+
+### Linux
+
+1. Plug the stick in and find its device name. `lsblk` lists disks with their sizes; the
+   stick is the one whose size matches and that appeared when you plugged it in, for example
+   `sdb`. Use the whole disk (`/dev/sdb`), not a partition (`/dev/sdb1`).
+2. If your desktop mounted the stick, unmount it: `udisksctl unmount -b /dev/sdb1` or
+   `sudo umount /dev/sdb*`.
+3. Write the image:
+
+       sudo dd if=talkalpine.img of=/dev/sdb bs=4M status=progress conv=fsync
+
+   `status=progress` reports progress; `conv=fsync` makes dd wait until everything is
+   really on the stick. It takes one to five minutes depending on the stick.
+4. When dd has finished, run `sync` and remove the stick.
+
+Getting the device name wrong overwrites another disk, so check `lsblk` twice.
+
+### macOS
+
+1. Plug the stick in and find its disk number: `diskutil list` shows every disk; the stick
+   is an "external, physical" disk whose size matches, for example `/dev/disk4`.
+2. Unmount it (unmount, not eject): `diskutil unmountDisk /dev/disk4`.
+3. Write the image, using the raw device (`rdisk`, which is much faster than `disk`):
+
+       sudo dd if=talkalpine.img of=/dev/rdisk4 bs=4m status=progress
+
+   (macOS dd wants a lowercase `m`; on older macOS versions without `status=progress`, press
+   Control-T to see how far it has got.)
+4. macOS may say the disk is not readable when dd finishes; choose Ignore. Then
+   `diskutil eject /dev/disk4` and remove the stick.
+
+Alternatively, [balenaEtcher](https://etcher.balena.io) does the same from a window: Flash
+from file, pick `talkalpine.img`, Select target, Flash.
+
+### Windows
+
+Either tool below works with a screen reader.
+
+**Rufus** ([rufus.ie](https://rufus.ie), a single .exe, no installation):
+
+1. Plug the stick in and start Rufus. It asks to check for updates; No is fine.
+2. Device: choose the stick (Rufus only lists removable drives).
+3. Boot selection: press Select and open `talkalpine.img`. Rufus recognises it as a disk
+   image; if it asks for a mode, choose **DD Image** mode, not ISO mode.
+4. Leave the other options as they are and press Start. Confirm the warning that the stick
+   will be erased. When the status bar says Ready, close Rufus and remove the stick.
+
+**balenaEtcher** ([etcher.balena.io](https://etcher.balena.io)):
+
+1. Flash from file, open `talkalpine.img`.
+2. Select target, tick the stick.
+3. Flash. Windows asks for administrator permission. Etcher verifies the write afterwards.
+
+Windows may report that the stick needs to be formatted after writing, because it cannot
+read the Linux partition. Choose Cancel; the stick is fine.
+
+### Booting from the stick
+
+Most machines open a boot menu with a key at power-on: F12 on Dell, Lenovo and many others,
+F11 or F8 on many desktops, Esc or F9 on HP, Option (Alt) on Intel Macs, F2 or Delete opens
+the firmware settings where the boot order can be changed instead. Choose the USB stick;
+on a UEFI machine pick the entry that says UEFI if there are two. Secure Boot has to be
+turned off in the firmware settings, since the stick's boot loader is not signed for it.
 
 ## What you hear
 
