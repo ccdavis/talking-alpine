@@ -22,3 +22,4 @@ dist/tdsr
 dist/espeakup
 run/*.raw
 release.log
+dist/SHA256SUMS
