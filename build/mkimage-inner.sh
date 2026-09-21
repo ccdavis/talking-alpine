@@ -7,7 +7,8 @@
 # Env: TEST=1 adds a serial getty for the QEMU harness; P1_MB, P2_MB sizes.
 set -eu
 A=/work/alpine
-ISO=$A/images/iso
+IMAGES_DIR=${IMAGES_DIR:-$A/images}
+ISO=$IMAGES_DIR/iso
 DIST=$A/dist
 W=/tmp/mk
 P1_MB=${P1_MB:-1200}
@@ -38,7 +39,7 @@ echo "== packages"
 # Every package in /etc/apk/world with its dependencies, from the ISO's own
 # repository first and the 3.24 mirror for the rest, into a repository on the
 # stick. Downloads are kept in images/apks-extra between builds.
-EXTRA=$A/images/apks-extra; mkdir -p $EXTRA
+EXTRA=$IMAGES_DIR/apks-extra; mkdir -p $EXTRA
 printf '%s\n' "$ISO/apks" https://dl-cdn.alpinelinux.org/alpine/v3.24/main https://dl-cdn.alpinelinux.org/alpine/v3.24/community > $W/repos
 apk --repositories-file $W/repos --keys-dir /etc/apk/keys --arch $ARCH fetch --recursive --output $EXTRA \
     $(grep -v '^#' $A/overlay/etc/apk/world | grep -v '^talkalpine$') linux-lts > $W/fetch.log 2>&1 || { tail -5 $W/fetch.log; exit 1; }

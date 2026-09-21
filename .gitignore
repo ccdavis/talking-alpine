@@ -1,4 +1,5 @@
 images/
+images
 src/upstream/
 src/dectalk/build/
 src/dectalk/libdectalk.a
@@ -20,3 +21,4 @@ keys/talkalpine.rsa
 dist/tdsr
 dist/espeakup
 run/*.raw
+release.log

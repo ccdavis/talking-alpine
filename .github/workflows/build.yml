@@ -12,7 +12,7 @@ jobs:
       - name: sources (Alpine ISO, espeakup, DECtalk)
         run: bash run/get-alpine.sh
       - name: build container
-        run: docker build -t a11y-alpine-build build
+        run: docker build -f build/Containerfile -t a11y-alpine-build build
       - name: tdsr (musl, dectalk) and espeakup
         run: PODMAN=docker bash run/build.sh
       - name: image
