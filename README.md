@@ -228,7 +228,7 @@ installed disk with the stick removed. Not yet on real hardware.
     git clone https://github.com/ccdavis/talking-alpine && cd talking-alpine
     bash run/get-alpine.sh      # Alpine ISO, espeakup and DECtalk sources
     bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk), espeakup
-    bash run/mkimage.sh         # dist/talkalpine.img   (TEST=1 adds a serial getty + tdsr debug log)
+    bash run/mkimage.sh         # dist/x86_64/talkalpine.img   (TEST=1 adds a serial getty + tdsr debug log)
     bash run/boot.sh            # QEMU test boot (BIOS); UEFI=1 for OVMF; NONET=1 offline
 
 `ARCH=x86` in front of each of those builds the 32-bit image (`dist/x86/talkalpine-x86.img`)

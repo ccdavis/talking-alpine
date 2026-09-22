@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the container image, then libdectalk.a, tdsr (musl, dectalk feature)
-# and espeakup inside it. Outputs: dist/tdsr, dist/espeakup (ARCH=x86_64, the
-# default) or dist/x86/tdsr, dist/x86/espeakup (ARCH=x86, built in the 32-bit
+# and espeakup inside it. Outputs: dist/x86_64/tdsr, dist/x86_64/espeakup (ARCH=x86_64,
+# the default) or dist/x86/tdsr, dist/x86/espeakup (ARCH=x86, built in the 32-bit
 # Alpine container).
 # Env: RUST_TDSR (checkout of github.com/ccdavis/rust-tdsr, default ~/rust-tdsr),
 #      PODMAN (podman or docker, default podman), ARCH.

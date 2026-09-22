@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs inside the a11y-alpine-build container (see run/mkimage.sh). Builds
-# dist/talkalpine.img, a BIOS+UEFI bootable USB image, without root:
+# dist/x86_64/talkalpine.img (dist/x86/talkalpine-x86.img), a BIOS+UEFI bootable USB image, without root:
 #   partition 1  FAT32 "ALPINE"     kernel, initramfs, modloop, signed apk repo,
 #                                   cache dir, the apkovl (mtools + syslinux)
 #   partition 2  ext4 "SPEECHDATA"  /home/user                (mkfs.ext4 -d)

@@ -10,7 +10,7 @@ Nothing on the machine's own disks is touched. See `PLAN.md` for the design.
 
 ## Use
 
-Write `dist/talkalpine.img` to a stick of 2 GB or more (`dd`, Rufus in "DD image" mode,
+Write `dist/x86_64/talkalpine.img` to a stick of 2 GB or more (`dd`, Rufus in "DD image" mode,
 balenaEtcher), boot from it. On a BIOS machine the loader beeps at once; on every machine a
 three-note chime plays when the sound card is ready, then the screen reader speaks and you are
 at a bash prompt as `user` (no password; `doas` for root). `speech-help` lists the keys.
@@ -25,12 +25,13 @@ at a bash prompt as `user` (no password; `doas` for root). `speech-help` lists t
 
     bash run/get-alpine.sh      # Alpine ISO, espeakup and DECtalk sources
     bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk), espeakup
-    bash run/mkimage.sh         # dist/talkalpine.img   (TEST=1: serial getty + tdsr debug log)
+    bash run/mkimage.sh         # dist/x86_64/talkalpine.img   (TEST=1: serial getty + tdsr debug log)
     bash run/boot.sh            # QEMU test boot (BIOS); UEFI=1 for OVMF
 
 `ARCH=x86` before each command builds the 32-bit image (`dist/x86/talkalpine-x86.img`) in
 the `i386/alpine` container; `ARCH=x86 CPU=pentium3 MEM=512 bash run/boot.sh` boots it on a
-32-bit-only virtual CPU. `release.sh` builds both.
+32-bit-only virtual CPU. `release.sh` builds both and puts the upload set (zips, binaries,
+`SHA256SUMS`) in `dist/release`.
 
 Rootless podman, no loop devices. `run/serial.sh`, `run/mon.sh`, `run/type.sh`, `run/shot.sh`
 drive the guest; `run/segrms.py` finds sound in the captured wav.

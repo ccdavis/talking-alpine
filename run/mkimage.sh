@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build dist/talkalpine.img (ARCH=x86_64, default) or dist/x86/talkalpine-x86.img (ARCH=x86)
+# Build dist/x86_64/talkalpine.img (ARCH=x86_64, default) or dist/x86/talkalpine-x86.img (ARCH=x86)
 # in the build container (rootless podman, or docker with PODMAN=docker). Prerequisites:
 # the ISO (run/get-alpine.sh with the same ARCH), the binaries (run/build.sh, same ARCH).
 # Env: TEST=1 (serial getty + tdsr debug log for the QEMU harness), P1_MB, P2_MB.

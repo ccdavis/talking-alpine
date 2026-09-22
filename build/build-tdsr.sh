@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs inside the a11y-alpine-build container: build libdectalk.a and a
-# rust-tdsr with the dectalk feature for x86_64 musl. Output: dist/tdsr
+# rust-tdsr with the dectalk feature for x86_64 musl. Output: dist/x86_64/tdsr
 set -e
 A=/work/alpine
 DIST=$A/${DISTDIR:-dist}

@@ -90,7 +90,7 @@ builds the image with docker; `release.sh --publish` builds locally and uploads
 
     bash run/get-alpine.sh      # ISO (3.24.2), espeakup source, DECtalk source
     bash run/build.sh           # container image, libdectalk.a, tdsr, espeakup
-    bash run/mkimage.sh         # dist/talkalpine.img   (TEST=1 for the QEMU harness)
+    bash run/mkimage.sh         # dist/x86_64/talkalpine.img   (TEST=1 for the QEMU harness)
     bash run/boot.sh            # QEMU, BIOS; UEFI=1 for OVMF
 
 Everything runs rootless in a podman container (`build/Containerfile`): the FAT partition is

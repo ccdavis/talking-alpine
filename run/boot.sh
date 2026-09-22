@@ -3,7 +3,7 @@
 #   serial  -> run/talk-serial.sock + run/talk-serial.log (kernel console, and a getty with TEST=1 images)
 #   monitor -> run/talk-mon.sock  (sendkey, screendump)      VNC :8
 #   audio   -> run/talk-audio.wav (Intel HD Audio output: the "did it speak" oracle)
-# Env: IMG (default dist/talkalpine.img, or dist/x86/talkalpine-x86.img with ARCH=x86; boots a
+# Env: IMG (default dist/x86_64/talkalpine.img, or dist/x86/talkalpine-x86.img with ARCH=x86; boots a
 #      COPY unless KEEP=1 so first-boot writes do not touch the build), UEFI=1 boots with OVMF,
 #      NONET=1 boots without a network card (offline persistence tests), MEM (MB, default 1024),
 #      CPUS, CPU (QEMU model, e.g. pentium3 or coreduo for a 32-bit-only machine, default host),
@@ -12,7 +12,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ARCH="${ARCH:-x86_64}"
-DEFIMG="$ROOT/dist/talkalpine.img"; [ "$ARCH" = x86_64 ] || DEFIMG="$ROOT/dist/$ARCH/talkalpine-$ARCH.img"
+DEFIMG="$ROOT/dist/x86_64/talkalpine.img"; [ "$ARCH" = x86_64 ] || DEFIMG="$ROOT/dist/$ARCH/talkalpine-$ARCH.img"
 IMG="${IMG:-$DEFIMG}"
 RUNIMG="$ROOT/run/talk-test.img"
 if [ "${KEEP:-0}" = 1 ]; then RUNIMG="$IMG"; else cp --reflink=auto "$IMG" "$RUNIMG"; fi

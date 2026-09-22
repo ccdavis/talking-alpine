@@ -22,11 +22,16 @@ jobs:
       - name: image
         run: bash run/mkimage.sh && find dist -type f | xargs ls -la
       - name: zip
-        run: cd dist && for f in $(find . -name 'talkalpine*.img'); do zip -q -9 -j "$(basename $f).zip" "$f"; done && sha256sum *.zip $(find . -name tdsr -o -name espeakup) > SHA256SUMS
+        run: cd dist/$ARCH && for f in talkalpine*.img; do zip -q -9 "$f.zip" "$f"; done && sha256sum *.zip tdsr espeakup > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: talkalpine-${{ matrix.arch }}
           path: |
+            dist/${{ matrix.arch }}/*.zip
+            dist/${{ matrix.arch }}/tdsr
+            dist/${{ matrix.arch }}/espeakup
+            dist/${{ matrix.arch }}/SHA256SUMS
+|
             dist/*.zip
             dist/tdsr
             dist/espeakup
