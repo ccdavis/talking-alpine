@@ -4,11 +4,12 @@
 # and during the boot before tdsr starts, it speaks.
 # /sys/class/tty/tty0/active names the foreground VT. speakup's silent file
 # takes a bit mask: 1 = set, 2 = screen output, 4 = key echo. 7 silences
-# both, 6 clears both.
+# both, 6 clears both. (pidof, not pgrep -x: busybox pgrep -x matches the
+# whole argv[0], /usr/bin/tdsr, and never falls back to the process name.)
 last=""
 while :; do
 	vt=$(cat /sys/class/tty/tty0/active 2>/dev/null)
-	if [ "$vt" = tty1 ] && pgrep -x tdsr >/dev/null 2>&1; then s=7; else s=6; fi
+	if [ "$vt" = tty1 ] && pidof tdsr >/dev/null 2>&1; then s=7; else s=6; fi
 	if [ "$s" != "$last" ]; then
 		echo $s > /sys/accessibility/speakup/silent 2>/dev/null
 		last=$s

@@ -35,6 +35,9 @@ configuration under `/etc`. The split matters because `lbu commit` never backs u
 package or it is lost at the first `speech-save`.
 
 - `etc/inittab`: tty1 runs `speech-session`, which ends in `login -f user`; the user's login shell `speech-shell` is tdsr around bash on tty1 and plain bash elsewhere;
+  it exports the standard PATH first, because busybox login gives a non-root user only
+  /bin:/usr/bin and the tty1 shell is not a login shell (ip, iw, wpa_supplicant, udhcpc, apk,
+  rc-service are in /sbin or /usr/sbin); doas sets the same PATH (`etc/doas.d/speech.conf`).
   tty2-4 are ordinary logins, read by Speakup. `TEST=1` images add a getty on ttyS0.
 - `etc/init.d/speech-audio` (boot runlevel): waits for a sound card, runs `speech-unmute`
   (`alsactl init` on every card, then unmutes the usual controls at 85 %), loads `speakup_soft`.
@@ -104,7 +107,11 @@ stick), stick repository and cache removed from apk's configuration, stick lines
 fstab, `/home/user` copied from the data partition, password via chpasswd. The boot-loader
 packages (syslinux, grub-bios, grub-efi, dosfstools, mkinitfs, lsblk) sit in the stick's
 repository without being installed on the stick (`build/repo-extra.txt`), so the install works
-offline. `ERASE_DISKS` is deliberately not used: setup-disk then takes the boot medium's disk to
+offline. If the mirror answers a 5 s probe, the script offers (default no) to keep the network
+repositories, which adds package updates and firmware packages for the machine's devices;
+otherwise /etc/apk/repositories holds only the stick's repository while setup-disk runs, so
+apk never waits on the network (the full list is put back on the stick and on the disk).
+`ERASE_DISKS` is deliberately not used: setup-disk then takes the boot medium's disk to
 be the first SCSI disk, and when that is the target (stick sdb, target sda) it copies the
 module tree into RAM first, which fills it. QEMU tests: BIOS with network and UEFI without,
 each booted from the installed disk with the stick removed (`DISK=`, `BOOTDISK=1` in

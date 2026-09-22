@@ -2,6 +2,11 @@
 # The login shell of `user`: on tty1 it is bash inside the tdsr screen reader,
 # on any other console (read by Speakup) or over ssh it is plain bash.
 # /etc/speech/debug makes tdsr log to ~/tdsr.log.
+# busybox login gives a non-root user PATH=/bin:/usr/bin; the shell on tty1 is
+# not a login shell, so it would keep that and miss ip, iw, wpa_supplicant,
+# udhcpc, apk, rc-service (all in /sbin or /usr/sbin). The standard path
+# for every console.
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 case "$(tty 2>/dev/null)" in
 /dev/tty1)
 	set -- /bin/bash

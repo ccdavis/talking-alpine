@@ -46,7 +46,30 @@ if [ -d /sys/firmware/efi ]; then
 else
 	echo "BIOS machine: MBR disk with syslinux."
 fi
-echo "Installing. This takes a few minutes; the installer reports each step."
+# The packages come from the stick's own repository; nothing is needed from
+# the network. With a connection, the mirror can add two things: package
+# updates published since the stick was built, and firmware packages for
+# this machine's devices that the stick does not carry. That is offered
+# only when the mirror answers, and the default is no, so a slow or
+# half-working connection never stalls the install. Otherwise the network
+# repositories are taken out of the list while the installer runs; the full
+# list goes back afterwards, on the stick and on the installed disk.
+cp /etc/apk/repositories /run/speech-repositories.orig
+trap 'cp /run/speech-repositories.orig /etc/apk/repositories' EXIT
+mirror=$(grep -m1 '^https\?://' /run/speech-repositories.orig || true)
+net=""
+if [ -n "$mirror" ] && wget -q -T 5 -O /dev/null "$mirror/$(apk --print-arch)/APKINDEX.tar.gz" 2>/dev/null; then
+	printf 'The internet is reachable. Also take package updates and firmware for this machine from the network? (y/N): '
+	read -r n
+	case "$n" in y|Y) net=1;; esac
+fi
+if [ -n "$net" ]; then
+	echo "Installing from the stick plus the network."
+else
+	grep '^/media/usb/apks' /run/speech-repositories.orig > /etc/apk/repositories
+	echo "Installing from the stick; no network connection is needed."
+fi
+echo "This takes a few minutes; the installer reports each step."
 # The installer's own questions are answered: whole disk, "sys" mode, lts
 # kernel, no swap (the user can add one later), and "y" to its erase
 # warning on stdin. ERASE_DISKS is deliberately not used: setup-disk then
@@ -63,7 +86,7 @@ mnt=/mnt/installed; mkdir -p $mnt
 mount "$root" $mnt
 # a disk install keeps its changes; no stick, no cache, no lbu, no data partition
 touch $mnt/etc/speech/installed
-sed -i '/^#\?\/media\/usb/d' $mnt/etc/apk/repositories
+grep -v '^#\?/media/usb' /run/speech-repositories.orig > $mnt/etc/apk/repositories
 rm -f $mnt/etc/apk/cache
 sed -i '/LABEL=ALPINE\|\/media\/usb\|SPEECHDATA/d' $mnt/etc/fstab
 rm -f $mnt/etc/.default_boot_services
