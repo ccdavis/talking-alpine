@@ -31,10 +31,3 @@ jobs:
             dist/${{ matrix.arch }}/tdsr
             dist/${{ matrix.arch }}/espeakup
             dist/${{ matrix.arch }}/SHA256SUMS
-|
-            dist/*.zip
-            dist/tdsr
-            dist/espeakup
-            dist/x86/tdsr
-            dist/x86/espeakup
-            dist/SHA256SUMS
