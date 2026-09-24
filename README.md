@@ -6,10 +6,12 @@ chime and a screen reader at a bash prompt.
 
 - **Alpine Linux 3.24** running from RAM (the stick is read-only while running, so it can be
   pulled at any time).
-- **[rust-tdsr](https://github.com/ccdavis/rust-tdsr)** as the screen reader, with two speech
-  engines built in: **espeak-ng** (fast, good for code and typing) and **DECtalk** (the classic
-  formant voice, good for reading). `Alt+s` switches between them. Speech goes straight to the
-  sound card; a keystroke stops it within about 50 ms.
+- **[rust-tdsr](https://github.com/ccdavis/rust-tdsr)** as the screen reader, with six speech
+  engines: **espeak-ng** (fast, good for code and typing), **MBROLA** (espeak-ng with recorded
+  human diphones), **DECtalk** (the classic formant voice, good for reading), **Piper** (neural
+  voices), **RHVoice** (a voice made for screen readers) and **Pico** (the small Android-era
+  voice). `Alt+s` steps through them, and each keeps its own voice and rate; see "Voices"
+  below. Speech goes straight to the sound card; a keystroke stops it within about 50 ms.
 - **Speakup** reads the other consoles (`Alt+F2` to `Alt+F4`) and the end of the boot.
 - A second partition for your files, grown to fill the stick on the first boot.
 - Packages you install and settings you change are kept on the stick (`speech-install`,
@@ -19,8 +21,9 @@ chime and a screen reader at a bash prompt.
 - Boots on BIOS and UEFI machines (Secure Boot must be off). Two images: 64-bit for any PC
   since about 2007, and 32-bit for Pentium M, Core Duo, early Atom and older machines.
 
-Status: built and exercised in QEMU (BIOS and UEFI, Intel HD Audio). **Not yet tested on real
-hardware.** Reports welcome.
+Status: built and exercised in QEMU (BIOS and UEFI, Intel HD Audio, 64-bit and 32-bit). The
+64-bit image and the disk install run on a real laptop; the 32-bit image has not been tried
+on real hardware yet. Reports welcome.
 
 ## Download and write the stick
 
@@ -131,7 +134,8 @@ one; a CPU name can be looked up at ark.intel.com, where "Instruction Set 64-bit
 When in doubt, try the 64-bit image first, then the 32-bit one.
 
 The 32-bit image is the same system: 32-bit Alpine, kernel built for Pentium-class CPUs (no
-PAE needed), tdsr with both engines, tested in QEMU on a Pentium III with 512 MB. It carries
+PAE needed), tdsr with all six engines (Piper is likely to be slow on these machines; see
+"Voices"), tested in QEMU with 512 MB. It carries
 only the wireless firmware such machines can use (Intel 3945 and 4965, Ralink, Realtek,
 Atheros USB) instead of the 100 MB of modern firmware in the 64-bit image, to keep the RAM
 disk small. Intel PRO/Wireless 2100 and 2200 cards need firmware Alpine does not ship;
@@ -166,7 +170,7 @@ Type `speech-help` for the keys and commands. The essentials, `Alt` plus a lette
 | `m` `,` `.` | previous, current, next character |
 | `U` `O` | top, bottom of the screen |
 | `x` | silence |
-| `s` | switch engine: espeak-ng / DECtalk |
+| `s` | switch engine: espeak-ng, MBROLA, DECtalk, Piper, RHVoice, Pico |
 | `c` | configuration menu (rate, volume, voice) |
 | `q` | quiet mode (stop reading output automatically) |
 | `t` | full-screen program mode |
@@ -183,6 +187,32 @@ Commands:
 | `speech-help` | this list |
 
 Your files live in `/home/user`, on the stick's second partition.
+
+## Voices
+
+`Alt+s` steps through the engines and says the name of each. Every engine keeps its own voice
+and its own rate: `Alt+c` then `r`, a number from 0 to 100 and Enter sets the rate of the
+engine that is speaking, and `Alt+c` then `V`, a voice number and Enter picks a voice (another
+Enter leaves the menu). Both are saved at once.
+
+| Engine | Voices (number for `Alt+c` `V`) | Notes |
+|---|---|---|
+| espeak-ng | 0 to 234 (`tdsr --list-voices` lists them) | Fastest and most responsive; many languages |
+| MBROLA | 257 en1 (British male), 258 us1 (female), 259 us2 and 260 us3 (male) | espeak-ng speaking through recorded diphones; sounds best at moderate rates |
+| DECtalk | 235 Paul to 243 Wendy | The classic voice, with its sentence intonation |
+| Piper | 244 cori (British female), 245 joe (US male), 246 kristin (US female) | Neural voices; the most natural, and the heaviest (see below) |
+| RHVoice | 247 alan, 248 bdl, 249 clb, 250 slt | Light, clear voices made for screen readers; good at high rates |
+| Pico | 252 British, 253 American (251, 254 to 256: German, Spanish, French, Italian) | Small and light |
+
+Piper needs a fast CPU and memory: a voice loads the first time it speaks (a few seconds from
+the stick, about 100 MB of RAM, 240 MB while loading). A laptop from around 2010 on should run
+it several times faster than real time. On old 32-bit machines it may be close to real time
+or slower, so the other engines are the better choice there. All the other engines are light
+enough for any machine the images run on.
+
+The voice files live on the stick's first partition (`piper-voices/`, `mbrola/`, `rhvoice/`)
+and are read from there rather than copied into memory; `speech-install-disk` copies them to
+the installed system.
 
 ## Installing on the PC's disk
 
@@ -201,7 +231,7 @@ puts the same talking system on the PC's own disk, so it boots without the stick
 4. It copies your files from the stick's data partition to the new `/home/user`, then asks
    whether to restart. Remove the stick when it restarts.
 
-The installed system is the same talking setup: tdsr with both engines on the first console,
+The installed system is the same talking setup: tdsr with all its engines and voices on the first console,
 Speakup on the others, `doas` without a password, the same commands. Changes are kept
 directly, so `speech-save` has nothing to do there, and `speech-install` is just apk. Package
 installs need the network, as on any Alpine system. There is no swap partition; `dd` a swap
@@ -226,8 +256,8 @@ installed disk with the stick removed. Not yet on real hardware.
 
     git clone https://github.com/ccdavis/rust-tdsr ~/rust-tdsr
     git clone https://github.com/ccdavis/talking-alpine && cd talking-alpine
-    bash run/get-alpine.sh      # Alpine ISO, espeakup and DECtalk sources
-    bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk), espeakup
+    bash run/get-alpine.sh      # Alpine ISO, espeakup, DECtalk, MBROLA and RHVoice sources, Piper and MBROLA voices
+    bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk + piper), espeakup, mbrola, RHVoice
     bash run/mkimage.sh         # dist/x86_64/talkalpine.img   (TEST=1 adds a serial getty + tdsr debug log)
     bash run/boot.sh            # QEMU test boot (BIOS); UEFI=1 for OVMF; NONET=1 offline
 
@@ -241,7 +271,19 @@ Everything runs in a rootless podman container (`PODMAN=docker` works too); no l
 ## Licences
 
 The scripts, configuration and rust-tdsr are GPL-3.0-or-later; Alpine Linux and its packages
-under their own licences. The DECtalk engine in the image is Fonix's proprietary code from the
+(including Pico, Apache-2.0) under their own licences. The voices on the stick carry their
+licences next to them:
+
+- Piper voices joe (CC0), kristin and cori (public domain), from
+  [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices), with their model cards.
+- MBROLA ([numediart/MBROLA](https://github.com/numediart/MBROLA), AGPL-3.0) and its voices
+  from numediart/MBROLA-voices, which may be copied and distributed free of charge with their
+  notice.
+- RHVoice ([RHVoice/RHVoice](https://github.com/RHVoice/RHVoice) 1.18.4; engine LGPL-2.1,
+  data GPL) with the voices alan, bdl, clb and slt; bdl, clb and slt are trained on the CMU
+  ARCTIC recordings, whose notice is included.
+
+`run/get-alpine.sh` fetches all of them at pinned versions and checks them. The DECtalk engine in the image is Fonix's proprietary code from the
 [dectalk/dectalk](https://github.com/dectalk/dectalk) repository, built as described in
 `src/dectalk/`; it is not part of this repository and is fetched at build time. The image is
 distributed for assistive use.
