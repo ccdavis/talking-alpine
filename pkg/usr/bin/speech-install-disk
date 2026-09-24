@@ -90,6 +90,22 @@ grep -v '^#\?/media/usb' /run/speech-repositories.orig > $mnt/etc/apk/repositori
 rm -f $mnt/etc/apk/cache
 sed -i '/LABEL=ALPINE\|\/media\/usb\|SPEECHDATA/d' $mnt/etc/fstab
 rm -f $mnt/etc/.default_boot_services
+# Piper voices from the stick (tdsr also looks in /usr/share/piper-voices)
+if [ -d /media/usb/piper-voices ]; then
+	mkdir -p $mnt/usr/share/piper-voices
+	cp /media/usb/piper-voices/* $mnt/usr/share/piper-voices/
+fi
+# MBROLA voices: on the stick /usr/share/mbrola is a link to them (made by
+# speech-session); a disk gets the files themselves
+if [ -d /media/usb/mbrola ] && [ ! -e $mnt/usr/share/mbrola ]; then
+	mkdir -p $mnt/usr/share
+	cp -a /media/usb/mbrola $mnt/usr/share/mbrola
+fi
+# RHVoice data (tdsr falls back to /usr/share/RHVoice without the stick)
+if [ -d /media/usb/rhvoice ]; then
+	mkdir -p $mnt/usr/share/RHVoice
+	cp -a /media/usb/rhvoice/. $mnt/usr/share/RHVoice/
+fi
 # the user's files from the stick's data partition
 mkdir -p $mnt/home/user
 if mountpoint -q /home/user; then cp -a /home/user/. $mnt/home/user/; fi

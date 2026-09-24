@@ -14,7 +14,7 @@ on the stick with Alpine's `lbu`.
 
 | Partition | FS | Label | Contents |
 |---|---|---|---|
-| 1 | FAT32, bootable (type 0c) | `ALPINE` | `boot/` kernel + initramfs + modloop, `boot/syslinux/` (BIOS), `efi/boot/bootx64.efi` + `boot/grub/grub.cfg` (UEFI), `apks/` a signed repository with every package in `/etc/apk/world` and its dependencies, `cache/` for packages added later, `talkalpine.apkovl.tar.gz` the configuration |
+| 1 | FAT32, bootable (type 0c) | `ALPINE` | `boot/` kernel + initramfs + modloop, `boot/syslinux/` (BIOS), `efi/boot/bootx64.efi` + `boot/grub/grub.cfg` (UEFI), `apks/` a signed repository with every package in `/etc/apk/world` and its dependencies, `cache/` for packages added later, `talkalpine.apkovl.tar.gz` the configuration, `piper-voices/` the Piper voices (190 MB, read in place), `mbrola/` the English MBROLA voices (28 MB, behind a `/usr/share/mbrola` link), `rhvoice/` RHVoice's English data and four voices (38 MB) |
 | 2 | ext4 | `SPEECHDATA` | `/home/user`; grown to the end of the stick on first boot (`speech-grow`) |
 
 The MBR carries syslinux's boot code. UEFI firmware finds `efi/boot/bootx64.efi` (the grub from
@@ -72,12 +72,59 @@ package or it is lost at the first `speech-save`.
   epoch counter checked per chunk. Engines are behind a small trait: espeak-ng (the existing
   `Espeak` dlopen wrapper, with a new `synth_to` chunk sink) and DECtalk (feature `dectalk`,
   static link of `libdectalk.a` from `src/dectalk/`, the same ARM7 single-threaded configuration
-  as the DOS port). DECtalk gets text one sentence at a time (max 160 characters) so a cancel
-  discards little; it must never be told to halt (the DOS work showed that hangs the next
-  utterance). `[:say letter]` spells typed characters.
-- `alt+s` (`KeyAction::SwitchEngine`) switches engines and announces the new one.
-- Config keys: `engine`, `alsa_device`, `alsa_buffer`, `dectalk_rate`, `dectalk_voice`; voices
-  `dectalk:paul` etc. appear after the espeak-ng voices in the config menu.
+  as the DOS port). DECtalk gets each utterance whole (its intonation spans the sentence and it
+  handles the punctuation inside one call); only text over 400 characters is split, preferring
+  sentence ends, so a cancel discards little; it must never be told to halt (the DOS work showed
+  that hangs the next utterance). `[:say letter]` spells typed characters. The engine is built
+  with `CHEESY_DICT_COMPRESSION` (the dictionary layout the ARM7 code reads) and the full US
+  dictionary, compiled from upstream's `Dic_us.txt` (`src/dectalk/Makefile`, `glue/dic2c.py`).
+  Until 2026-09-23 the define was missing: dictionary lookups missed, function words were
+  stressed and every word got its own pitch accent. Output is now sample-identical to
+  upstream's Linux build.
+- Piper (feature `piper`, added 2026-09-23): neural voices run in-process with rten, a pure
+  Rust ONNX runtime (Alpine has no onnxruntime for x86; rten gives one code path for both
+  images). espeak-ng phonemises with `espeak_TextToPhonemesWithTerminator` as Piper does
+  (Alpine patches it into 1.52). One model run per sentence on a helper thread, the next
+  sentence synthesised while one plays; a cancel returns at once (2 ms measured) and the
+  helper drops the sentence it is on. Voices: joe (CC0), kristin and cori (public domain),
+  medium quality, 22050 Hz, fetched by `run/get-piper-voices.sh` from a pinned revision with
+  SHA256 checks, kept on partition 1 and read from `/media/usb/piper-voices`;
+  `speech-install-disk` copies them to `/usr/share/piper-voices`. A voice loads on first use:
+  about 100 MB of RAM, 240 MB peak while loading (fits the 32-bit image in 512 MB, tested).
+  Speed on one core of an i7-14700: about 12x real time (x86_64), 4x (32-bit: rten's fast
+  kernels are AVX2/x86_64 only), so old 32-bit machines may be near real time.
+- MBROLA (added 2026-09-23): espeak-ng's mb-us1/us2/us3/en1 voices, which tdsr already lists
+  and selects like any espeak-ng voice (alt+c V; `tdsr --list-voices`). Alpine packages the
+  voice data but not the program, so `build/build-mbrola.sh` compiles numediart/MBROLA (pinned
+  in `run/get-alpine.sh`; `-DLITTLE_ENDIAN`, which musl's headers do not let it work out) into
+  the talkalpine package; `run/get-mbrola-voices.sh` fetches the four English databases with
+  their licence (free distribution without charge, notice included) onto partition 1, and
+  `speech-session` links `/usr/share/mbrola` there at boot so they stay out of the RAM root;
+  `speech-install-disk` copies them. tdsr also offers them as an engine of their own
+  (`mbrola`, after eSpeak on alt+s, voices `mbrola:us1` etc., its own `mbrola_rate`: 80 wpm
+  at 0, 190 at 50, 300 at 100), since eSpeak's rate is far too fast for diphone voices; the
+  two engines share one espeak-ng and each sets its voice, rate and volume before speaking.
+- RHVoice and Pico (added 2026-09-23, after comparing samples of MBROLA, Pico, Flite and
+  RHVoice; Flite brought nothing over the others). tdsr loads `libRHVoice.so.1` and
+  `libttspico.so.0` at run time (no build feature); each is an engine with its own rate.
+  RHVoice is not packaged by Alpine: `build/build-rhvoice.sh` builds 1.18.4 (cmake,
+  `WITH_DATA=OFF`, Alpine's boost headers) from a minimal clone made by `run/get-alpine.sh`;
+  its libraries go in the talkalpine package (needs libstdc++), its English data and the
+  voices alan, bdl, clb, slt (native speakers, licences that allow passing them on; lyubov
+  is CC BY-NC-ND and non-native, evgeniy-eng needs the authors' permission) on partition 1,
+  read from `/media/usb/rhvoice` (`rhvoice_data`). Pico is Alpine's `picotts` (en-US, en-GB
+  and four other languages, 6 MB in the RAM root). RHVoice plays at 24000 Hz, which
+  alsa-lib's snd_pcm_set_params refuses on the 48000 Hz dmix at any latency ("Unable to get
+  period size"); tdsr then opens the device at twice the rate and upsamples.
+- `alt+s` (`KeyAction::SwitchEngine`) steps through the loaded engines (espeak-ng, MBROLA,
+  DECtalk, Piper, RHVoice, Pico) and announces the new one; each engine keeps its own rate
+  (`rate`, `mbrola_rate`, `dectalk_rate`, `piper_rate`, `rhvoice_rate`, `pico_rate`), and
+  alt+c r sets the one speaking.
+- Config keys: `engine`, `alsa_device`, `alsa_buffer`, `dectalk_rate`, `dectalk_voice`,
+  `piper_rate`, `piper_voice`, `piper_voices`, `mbrola_rate`, `mbrola_voice`, `rhvoice_rate`, `rhvoice_voice`,
+  `rhvoice_data`, `pico_rate`, `pico_voice`, `pico_lang`; voices `dectalk:paul`,
+  `piper:en_US-joe-medium`, `rhvoice:slt`, `pico:en-GB` appear after the espeak-ng voices in
+  the config menu.
 
 ## Publishing
 
@@ -88,7 +135,7 @@ builds the image with docker; `release.sh --publish` builds locally and uploads
 
 ## Build
 
-    bash run/get-alpine.sh      # ISO (3.24.2), espeakup source, DECtalk source
+    bash run/get-alpine.sh      # ISO (3.24.2), espeakup, DECtalk, MBROLA and RHVoice sources, Piper and MBROLA voices
     bash run/build.sh           # container image, libdectalk.a, tdsr, espeakup
     bash run/mkimage.sh         # dist/x86_64/talkalpine.img   (TEST=1 for the QEMU harness)
     bash run/boot.sh            # QEMU, BIOS; UEFI=1 for OVMF

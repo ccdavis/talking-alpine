@@ -4,8 +4,9 @@ Public repository with downloads and installation directions: https://github.com
 (`run/sync-public.sh` mirrors this directory there; `release.sh --publish` builds and uploads the image).
 
 A USB stick image that boots a PC or laptop (BIOS or UEFI, x86_64) straight into a talking
-shell: Alpine Linux 3.24 diskless, the rust-tdsr screen reader with espeak-ng and DECtalk built
-in (alt+s switches), Speakup on the other consoles, and a second partition for the user's files.
+shell: Alpine Linux 3.24 diskless, the rust-tdsr screen reader with espeak-ng (plus four
+English MBROLA voices), DECtalk, RHVoice, Pico and Piper neural voices (alt+s switches engines),
+Speakup on the other consoles, and a second partition for the user's files.
 Nothing on the machine's own disks is touched. See `PLAN.md` for the design.
 
 ## Use
@@ -23,8 +24,8 @@ at a bash prompt as `user` (no password; `doas` for root). `speech-help` lists t
 
 ## Build
 
-    bash run/get-alpine.sh      # Alpine ISO, espeakup and DECtalk sources
-    bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk), espeakup
+    bash run/get-alpine.sh      # Alpine ISO, espeakup, DECtalk, MBROLA and RHVoice sources, Piper and MBROLA voices
+    bash run/build.sh           # container image; libdectalk.a, tdsr (musl, dectalk + piper), espeakup, mbrola, RHVoice
     bash run/mkimage.sh         # dist/x86_64/talkalpine.img   (TEST=1: serial getty + tdsr debug log)
     bash run/boot.sh            # QEMU test boot (BIOS); UEFI=1 for OVMF
 
@@ -39,4 +40,10 @@ drive the guest; `run/segrms.py` finds sound in the captured wav.
 rust-tdsr is expected at `~/rust-tdsr` (`RUST_TDSR=` to override); the ALSA backend and the
 DECtalk feature live there. The DECtalk engine is Fonix's proprietary code from the
 `dectalk/dectalk` repository (see `../freedos/research/05-dectalk-sources.md`); the built image
-contains it.
+contains it. The Piper voices on the stick (joe, CC0; kristin and cori, public domain) come from
+huggingface.co/rhasspy/piper-voices; their model cards are in `piper-voices/` on the stick. The
+MBROLA program (AGPL-3.0) is built from github.com/numediart/MBROLA and its English voices come
+from numediart/MBROLA-voices, whose licence (in `mbrola/` on the stick) allows passing them on
+free of charge. RHVoice (LGPL-2.1+, github.com/RHVoice/RHVoice 1.18.4) is built from source with
+its English data and the alan, bdl, clb and slt voices (GPL data; slt under the CMU licence of its
+recordings); Pico is Alpine's picotts package (Apache-2.0).

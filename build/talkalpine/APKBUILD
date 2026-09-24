@@ -3,11 +3,11 @@
 pkgname=talkalpine
 pkgver=1.0
 pkgrel=0
-pkgdesc="Talking Alpine: tdsr with espeak-ng and DECtalk, espeakup, speech-* tools"
+pkgdesc="Talking Alpine: tdsr with espeak-ng, DECtalk, Piper, RHVoice and Pico, mbrola, espeakup, speech-* tools"
 url="https://github.com/ccdavis/vintage-pc-speech"
 arch="x86_64"
-license="GPL-3.0-or-later AND custom"
-depends="espeak-ng alsa-utils alsa-lib bash doas sfdisk util-linux-misc e2fsprogs e2fsprogs-extra"
+license="GPL-3.0-or-later AND AGPL-3.0-or-later AND LGPL-2.1-or-later AND custom"
+depends="espeak-ng picotts libstdc++ alsa-utils alsa-lib bash doas sfdisk util-linux-misc e2fsprogs e2fsprogs-extra"
 options="!check !strip"
 source=""
 

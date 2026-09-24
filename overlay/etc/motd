@@ -1,3 +1,3 @@
-Talking Alpine. alt+s switches eSpeak and DECtalk, alt+x silences.
+Talking Alpine. alt+s switches eSpeak, MBROLA, DECtalk, Piper, RHVoice, Pico, alt+x silences.
 speech-save keeps installed packages and settings on the stick.
 speech-audio-next moves speech to the next sound card. speech-help for more.

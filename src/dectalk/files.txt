@@ -14,7 +14,6 @@ api/epsonapi.c
 hlsyn/hlframe.c
 hlsyn/inithl.c
 hlsyn/log10table.c
-lts/maindict.c
 hlsyn/nasalf1x.c
 cmd/par_char.c
 cmd/par_dict.c

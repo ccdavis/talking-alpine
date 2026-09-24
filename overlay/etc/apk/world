@@ -14,6 +14,7 @@ htop
 iw
 kbd-bkeymaps
 libblkid
+libstdc++
 links
 linux-firmware-ath9k_htc
 linux-firmware-ath10k
@@ -30,6 +31,7 @@ mc
 nano
 openssh
 openssh-server
+picotts
 sfdisk
 sof-firmware
 talkalpine

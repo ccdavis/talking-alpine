@@ -8,5 +8,6 @@ RUN apk add --no-cache \
     build-base rust cargo git bash coreutils python3 \
     alsa-lib alsa-utils espeak-ng espeak-ng-dev alsa-lib-dev \
     syslinux grub grub-efi grub-bios mtools dosfstools e2fsprogs \
-    xorriso apk-tools curl file util-linux sfdisk meson ninja pkgconf abuild cpio openssl
+    xorriso apk-tools curl file util-linux sfdisk meson ninja pkgconf abuild cpio openssl \
+    cmake samurai boost-dev
 WORKDIR /work

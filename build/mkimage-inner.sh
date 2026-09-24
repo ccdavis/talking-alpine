@@ -34,6 +34,14 @@ PKG=$W/pkgroot; rm -rf $PKG; mkdir -p $PKG/usr/bin $PKG/usr/share/talkalpine
 cp -a $A/pkg/. $PKG/
 install -m 755 $DIST/tdsr $PKG/usr/bin/tdsr
 install -m 755 $DIST/espeakup $PKG/usr/bin/espeakup
+# MBROLA: the program in the package, the voices on partition 1 (read in place, not copied
+# into the RAM root); espeak-ng and tdsr look for them in /usr/share/mbrola/<voice>/<voice>,
+# which speech-session links to the stick at boot
+install -m 755 $DIST/mbrola $PKG/usr/bin/mbrola
+# RHVoice: the libraries in the package, the English data and voices on partition 1 (tdsr's
+# rhvoice_data points there, then at /usr/share/RHVoice for a disk install)
+mkdir -p $PKG/usr/lib
+install -m 755 $DIST/rhvoice/libRHVoice.so.1 $DIST/rhvoice/libRHVoice_core.so.1 $PKG/usr/lib/
 if [ "$ARCH" = x86 ]; then
     # Only the Core Duo era Intel wireless firmware, out of the 100+ MB linux-firmware-intel
     FW=$IMAGES_DIR/fw-cache; mkdir -p $FW
@@ -56,6 +64,13 @@ echo "== packages"
 EXTRA=$IMAGES_DIR/apks-extra; [ "$ARCH" = x86_64 ] || EXTRA=$IMAGES_DIR/apks-extra-$ARCH; mkdir -p $EXTRA
 apk --repositories-file $W/repos --keys-dir /etc/apk/keys --arch $ARCH fetch --recursive --output $EXTRA \
     $(grep -v '^talkalpine$' $WORLD) linux-lts $(grep -v '^#' $A/build/repo-extra.txt) > $W/fetch.log 2>&1 || { tail -5 $W/fetch.log; exit 1; }
+# The cache keeps every version fetched so far (a new kernel on the mirror left the old
+# one beside it, 146 MB): keep only the newest file of each package.
+seen=" "
+for f in $(ls -t $EXTRA/*.apk); do
+    n=$(basename "$f" | sed 's/-[0-9][^-]*-r[0-9]*\.apk$//')
+    case "$seen" in *" $n "*) echo "   dropping superseded $(basename "$f")"; rm -f "$f";; *) seen="$seen$n ";; esac
+done
 mkdir -p $W/p1/apks/$ARCH
 cp $ISO/apks/$ARCH/*.apk $W/p1/apks/$ARCH/
 cp $EXTRA/*.apk $EXTRA_PKG_DIR/*.apk $W/p1/apks/$ARCH/
@@ -96,6 +111,34 @@ else
     rm -rf $W/p1/boot/grub $W/p1/efi
 fi
 cp $A/boot/README.txt $W/p1/README.txt
+# RHVoice data: languages/English and the four voices, with the licence notes
+RH=$A/src/upstream/RHVoice
+for f in languages/English/language.info voices/alan/voice.info voices/bdl/voice.info voices/clb/voice.info voices/slt/voice.info; do
+    [ -f $RH/data/$f ] || { echo "RHVoice data missing ($f): rerun run/get-alpine.sh"; exit 1; }
+done
+mkdir -p $W/p1/rhvoice/languages $W/p1/rhvoice/voices
+cp -a $RH/data/languages/English $W/p1/rhvoice/languages/
+for v in alan bdl clb slt; do cp -a $RH/data/voices/$v $W/p1/rhvoice/voices/; done
+find $W/p1/rhvoice \( -name '.git' -o -name 'CMakeLists.txt' -o -name 'SConscript' \) -exec rm -rf {} +
+cp $RH/LICENSE.md $W/p1/rhvoice/LICENSE-data-GPL-2.0.md
+cp $A/build/licenses/LGPL-2.1.txt $W/p1/rhvoice/LICENSE-engine-LGPL-2.1.txt
+cp $RH/external/libs/sonic/COPYING $W/p1/rhvoice/LICENSE-sonic-Apache-2.0.txt
+for v in bdl clb slt; do cp $A/build/licenses/CMU-ARCTIC-$v.txt $W/p1/rhvoice/voices/$v/COPYING-CMU-ARCTIC.txt; done
+cat > $W/p1/rhvoice/README.txt <<'TXT'
+RHVoice for the talking stick, built from github.com/RHVoice/RHVoice tag 1.18.4 (commit
+fa9dd196fd2dac3b0bf089a2d80fc8477c2380e3): the English language files and the voices alan,
+bdl, clb and slt. The engine (libRHVoice, in the talkalpine package) is LGPL-2.1-or-later
+(LICENSE-engine-LGPL-2.1.txt) and includes the sonic library (Apache-2.0,
+LICENSE-sonic-Apache-2.0.txt); the language and voice data is GPL (LICENSE-data-GPL-2.0.md).
+The bdl, clb and slt voices are trained on the CMU ARCTIC recordings, whose notice is in
+voices/<voice>/COPYING-CMU-ARCTIC.txt.
+TXT
+# MBROLA voices (run/get-mbrola-voices.sh), behind the /usr/share/mbrola link
+cp -a $IMAGES_DIR/mbrola-voices $W/p1/mbrola
+cp $A/src/upstream/MBROLA/LICENSE $W/p1/mbrola/LICENSE-mbrola-program-AGPL-3.0.txt
+# Piper voices (run/get-piper-voices.sh): read by tdsr from /media/usb/piper-voices
+mkdir -p $W/p1/piper-voices
+cp $IMAGES_DIR/piper-voices/*.onnx $IMAGES_DIR/piper-voices/*.onnx.json $IMAGES_DIR/piper-voices/*.MODEL_CARD.txt $W/p1/piper-voices/
 touch $W/p1/cache/.keep
 
 echo "== partition 1 (FAT32, ${P1_MB} MB)"
@@ -111,6 +154,9 @@ cat > $W/p2/README.txt <<'TXT'
 This is /home/user on the talking stick. Files here survive reboots; the
 system itself is reloaded from partition 1 every boot.
 TXT
+# the files as well as the top directory belong to user (root_owner only sets the latter):
+# tdsr rewrites ~/.tdsr.cfg whenever a setting changes
+chown -R 1000:1000 $W/p2
 rm -f $W/p2.img; truncate -s ${P2_MB}M $W/p2.img
 mkfs.ext4 -q -L SPEECHDATA -d $W/p2 -E root_owner=1000:1000 $W/p2.img
 

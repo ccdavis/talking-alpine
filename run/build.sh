@@ -17,3 +17,5 @@ mkdir -p "$HOME/.cache/a11y-cargo-$ARCH" "$ROOT/$DISTDIR"
 $PODMAN run --rm $PLATFORM -e ARCH="$ARCH" -e DISTDIR="$DISTDIR" -v "$ROOT:/work/alpine:Z" -v "$RUST_TDSR:/work/rust-tdsr:Z" \
   -v "$HOME/.cache/a11y-cargo-$ARCH:/cargo-home:Z" "$IMAGE" sh /work/alpine/build/build-tdsr.sh
 $PODMAN run --rm $PLATFORM -e DISTDIR="$DISTDIR" -v "$ROOT:/work/alpine:Z" "$IMAGE" sh /work/alpine/build/build-espeakup.sh
+$PODMAN run --rm $PLATFORM -e DISTDIR="$DISTDIR" -v "$ROOT:/work/alpine:Z" "$IMAGE" sh /work/alpine/build/build-mbrola.sh
+$PODMAN run --rm $PLATFORM -e DISTDIR="$DISTDIR" -v "$ROOT:/work/alpine:Z" "$IMAGE" sh /work/alpine/build/build-rhvoice.sh

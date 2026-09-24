@@ -8,6 +8,11 @@ now=$(cut -d. -f1 /proc/uptime); last=$(cat /run/speech-session.last 2>/dev/null
 echo "$now" > /run/speech-session.last
 if [ $((now - last)) -lt 10 ]; then sleep 5; fi
 /usr/bin/speech-mount-data
+# The MBROLA voices are read from the stick; espeak-ng looks for them in
+# /usr/share/mbrola (which a disk install has as a real directory).
+if [ ! -e /usr/share/mbrola ] && [ -d /media/usb/mbrola ]; then
+	ln -s /media/usb/mbrola /usr/share/mbrola
+fi
 # A sound card that appeared after the speech-audio service ran (codecs
 # that load firmware first) is unmuted here.
 /usr/bin/speech-unmute
